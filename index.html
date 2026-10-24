@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Hub Central de Telemetria</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: rgba(15, 23, 42, 0.88);
+      --card-border: rgba(56, 189, 248, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --nav-bg: rgba(7, 11, 20, 0.96);
+      --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+      --input-bg: #1e293b;
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+    
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;
+    }
+    .brand-title { font-size: 18px; font-weight: 700; }
+    .brand-sub { font-size: 12px; color: var(--text-muted); }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link {
+      color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px;
+      border-radius: 6px; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border);
+    }
+    .theme-btn {
+      background: none; border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+    }
+
+    main { padding: 24px; max-width: 1650px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+    .import-hero {
+      background: var(--card-bg); border: 2px dashed var(--cyan); border-radius: 14px;
+      padding: 24px 30px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; gap: 14px; box-shadow: var(--shadow);
+    }
+    .import-hero.has-data {
+      border-style: solid; border-color: var(--card-border); padding: 18px 24px;
+      flex-direction: row; justify-content: space-between; text-align: left;
+    }
+    .upload-btn {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #fff; border: none; padding: 10px 22px; border-radius: 8px; font-weight: 700;
+      cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .filter-input {
+      background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 7px 12px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .kpi-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 18px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan);
+    }
+    .kpi-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+    .kpi-val { font-size: 28px; font-weight: 800; }
+    .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .charts-row-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .charts-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) {
+      .charts-row-1, .charts-row-2 { grid-template-columns: 1fr; }
+    }
+
+    .chart-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px;
+      padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+    }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .chart-title { font-size: 15px; font-weight: 700; }
+    .chart-canvas { width: 100%; height: 380px; }
+
+    .modules-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .module-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      text-decoration: none; color: inherit; transition: all 0.25s; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .module-card:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: var(--shadow); }
+    .module-num { font-size: 11px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; margin-bottom: 4px; }
+    .module-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .module-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+    .empty-state-notice {
+      padding: 40px; text-align: center; color: var(--text-muted); font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">ATALAIA 3</span>
+      <div>
+        <div class="brand-title">Sistema de Telemetria Ambiental & Edge Computing</div>
+        <div class="brand-sub">Campus Paulo VI • São Luís-MA</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link active">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="import-hero" id="hero-import-box">
+      <div>
+        <h2 id="hero-title" style="font-size:22px; margin-bottom: 6px;">Nenhum arquivo CSV carregado</h2>
+        <p id="hero-sub" style="color:var(--text-muted); font-size: 14px;">Carregue o arquivo de telemetria emitido pelo ATALAIA 3 para desbloquear todos os gráficos.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <select id="hub-filter-loc" class="filter-input" style="display:none;" onchange="filterHubByLocation()">
+          <option value="">Todas as Localidades</option>
+        </select>
+        <input type="file" id="fileCsvInput" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
+        <button class="upload-btn" onclick="document.getElementById('fileCsvInput').click()">
+          📥 Importar CSV do Atalaia
+        </button>
+      </div>
+    </section>
+
+    <div id="content-loaded-area" style="display:none; flex-direction:column; gap:24px;">
+      <section class="kpi-grid">
+        <div class="kpi-card" style="--cyan: var(--blue);">
+          <div class="kpi-title">Temperatura (°C)</div>
+          <div class="kpi-val" id="kpi-temp">--</div>
+          <div class="kpi-sub" id="kpi-temp-sub">Min: -- | Max: --</div>
+        </div>
+        <div class="kpi-card" style="--cyan: var(--cyan);">
+          <div class="kpi-title">Umidade Relativa (%)</div>
+          <div class="kpi-val" id="kpi-umid">--</div>
+          <div class="kpi-sub" id="kpi-umid-sub">Min: -- | Max: --</div>
+        </div>
+        <div class="kpi-card" style="--cyan: var(--green);">
+          <div class="kpi-title">Gases Compensados (PPM)</div>
+          <div class="kpi-val" id="kpi-gas">--</div>
+          <div class="kpi-sub" id="kpi-gas-sub">MQ ADC: --</div>
+        </div>
+        <div class="kpi-card" style="--cyan: var(--amber);">
+          <div class="kpi-title">IQA Atmosférico</div>
+          <div class="kpi-val" id="kpi-iqa">--</div>
+          <div class="kpi-sub" id="kpi-iqa-sub">Classificação: --</div>
+        </div>
+        <div class="kpi-card" style="--cyan: var(--rose);">
+          <div class="kpi-title">Amostras Válidas</div>
+          <div class="kpi-val" id="kpi-total">0</div>
+          <div class="kpi-sub" id="kpi-total-sub">Local: --</div>
+        </div>
+      </section>
+
+      <section class="charts-row-1">
+        <div class="chart-box">
+          <div class="chart-header">
+            <div class="chart-title">Série Temporal Cruzada: Temperatura (°C), Sensação Térmica (°C) e Gases (PPM)</div>
+          </div>
+          <div id="chart-timeline" class="chart-canvas"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-header">
+            <div class="chart-title">Medidor Dinâmico de Condições Atuais</div>
+          </div>
+          <div id="chart-gauges" class="chart-canvas"></div>
+        </div>
+      </section>
+
+      <section class="charts-row-2">
+        <div class="chart-box">
+          <div class="chart-header">
+            <div class="chart-title">Perfil Multivariado Normalizado (Radar)</div>
+          </div>
+          <div id="chart-radar" class="chart-canvas"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-header">
+            <div class="chart-title">Distribuição de Estados do TinyML</div>
+          </div>
+          <div id="chart-tinyml" class="chart-canvas"></div>
+        </div>
+      </section>
+    </div>
+
+    <div id="empty-state-card" class="chart-box empty-state-notice">
+      Aguardando importação do arquivo CSV para inicializar o pipeline de renderização dos gráficos.
+    </div>
+
+    <h2 style="font-size: 19px; font-weight: 700; margin-top: 6px;">Módulos Especializados da Plataforma</h2>
+    <section class="modules-nav">
+      <a href="1.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 01</div>
+          <div class="module-title">Gestão de Dados & CRUD Total</div>
+          <div class="module-desc">Tabela completa, edição de valores, inclusão, exclusão e exportação seletiva (PDF, CSV, HTML, JSON).</div>
+        </div>
+      </a>
+      <a href="2.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 02</div>
+          <div class="module-title">Avaliação de Gases & IQA</div>
+          <div class="module-desc">Comportamento do sensor MQ-135, curva de dispersão ADC x PPM, faixas Conama e histogramas.</div>
+        </div>
+      </a>
+      <a href="3.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 03</div>
+          <div class="module-title">Avaliação Térmica</div>
+          <div class="module-desc">Temperatura de bulbo seco, sensação térmica, taxas dT/dt e gráficos em coordenadas polares.</div>
+        </div>
+      </a>
+      <a href="4.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 04</div>
+          <div class="module-title">Umidade, Orvalho & Clima</div>
+          <div class="module-desc">Ponto de orvalho Magnus-Tetens, delta de condensação e telemetria de sensores de chuva e fogo.</div>
+        </div>
+      </a>
+      <a href="5.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 05</div>
+          <div class="module-title">Indicadores Derivados</div>
+          <div class="module-desc">Índice de Thom, pressão de vapor d'água, umidade absoluta e coordenadas paralelas multivariadas.</div>
+        </div>
+      </a>
+      <a href="6.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 06</div>
+          <div class="module-title">Estatística & Correlação</div>
+          <div class="module-desc">Matriz de calor de correlações de Pearson, modelos de regressão linear, separatrizes e outliers.</div>
+        </div>
+      </a>
+      <a href="7.html" class="module-card">
+        <div>
+          <div class="module-num">MÓDULO 07</div>
+          <div class="module-title">Glossário & Fórmulas</div>
+          <div class="module-desc">Enciclopédia técnica dos sensores, parâmetros de engenharia do ATALAIA 3 e formulações físicas.</div>
+        </div>
+      </a>
+    </section>
+  </main>
+
+  <script>
+    function applyTheme(theme) {
+      document.body.classList.toggle('light-theme', theme === 'light');
+      localStorage.setItem('atalaia_theme', theme);
+      if (activeDataset.length) renderCharts();
+    }
+    function toggleTheme() {
+      const current = localStorage.getItem('atalaia_theme') || 'dark';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let globalDataset = [];
+    let activeDataset = [];
+    let chartTimeline, chartGauges, chartRadar, chartTinyML;
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) return [];
+      const delimiter = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(delimiter).map(h => h.trim());
+
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const vals = line.split(delimiter);
+        const row = {};
+        headers.forEach((h, idx) => {
+          let val = (vals[idx] || '').trim();
+          val = val.replace(',', '.');
+          if (!isNaN(val) && val !== '') {
+            row[h] = parseFloat(val);
+          } else {
+            row[h] = vals[idx] ? vals[idx].trim() : '';
+          }
+        });
+        data.push(row);
+      }
+      return data;
+    }
+
+    function handleCSVUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const parsed = parseCSV(evt.target.result);
+        if (parsed.length > 0) {
+          globalDataset = parsed;
+          localStorage.setItem('atalaia_master_dataset', JSON.stringify(parsed));
+          loadDatasetFromStorage();
+        } else {
+          alert('Falha ao processar CSV.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function loadDatasetFromStorage() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { globalDataset = JSON.parse(stored); } catch (e) { globalDataset = []; }
+      } else {
+        globalDataset = [];
+      }
+
+      if (globalDataset && globalDataset.length > 0) {
+        populateLocationSelector();
+        activeDataset = [...globalDataset];
+
+        document.getElementById('hero-import-box').classList.add('has-data');
+        document.getElementById('hero-title').innerText = `Base Ativa: ${globalDataset.length.toLocaleString('pt-BR')} Leituras`;
+        document.getElementById('hero-sub').innerText = `Período registrado: ${globalDataset[0].Data_Hora} até ${globalDataset[globalDataset.length - 1].Data_Hora}`;
+        document.getElementById('content-loaded-area').style.display = 'flex';
+        document.getElementById('empty-state-card').style.display = 'none';
+        document.getElementById('hub-filter-loc').style.display = 'inline-block';
+        updateKPIs();
+        renderCharts();
+      } else {
+        document.getElementById('hero-import-box').classList.remove('has-data');
+        document.getElementById('hero-title').innerText = 'Nenhum arquivo CSV carregado';
+        document.getElementById('hero-sub').innerText = 'Carregue o arquivo de telemetria emitido pelo ATALAIA 3 para desbloquear todos os gráficos.';
+        document.getElementById('content-loaded-area').style.display = 'none';
+        document.getElementById('empty-state-card').style.display = 'block';
+        document.getElementById('hub-filter-loc').style.display = 'none';
+      }
+    }
+
+    function populateLocationSelector() {
+      const sel = document.getElementById('hub-filter-loc');
+      sel.innerHTML = '<option value="">Todas as Localidades</option>';
+      const locSet = new Set(globalDataset.map(d => d.Localizacao).filter(Boolean));
+      locSet.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.innerText = l;
+        sel.appendChild(opt);
+      });
+    }
+
+    function filterHubByLocation() {
+      const loc = document.getElementById('hub-filter-loc').value;
+      activeDataset = loc ? globalDataset.filter(d => d.Localizacao === loc) : [...globalDataset];
+      updateKPIs();
+      renderCharts();
+    }
+
+    function updateKPIs() {
+      const n = activeDataset.length;
+      if (!n) return;
+      const temps = activeDataset.map(d => d.Temperatura_C);
+      const umids = activeDataset.map(d => d.Umidade_Pct);
+      const gases = activeDataset.map(d => d.Gas_PPM_Comp);
+      const iqas = activeDataset.map(d => d.IQA);
+      const last = activeDataset[n - 1];
+
+      const avgT = (temps.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const minT = Math.min(...temps).toFixed(1);
+      const maxT = Math.max(...temps).toFixed(1);
+
+      const avgU = (umids.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const minU = Math.min(...umids).toFixed(1);
+      const maxU = Math.max(...umids).toFixed(1);
+
+      const avgG = (gases.reduce((a,b)=>a+b,0)/n).toFixed(1);
+
+      document.getElementById('kpi-temp').innerText = `${last.Temperatura_C} °C`;
+      document.getElementById('kpi-temp-sub').innerText = `Média: ${avgT} | Min: ${minT} | Max: ${maxT}`;
+
+      document.getElementById('kpi-umid').innerText = `${last.Umidade_Pct} %`;
+      document.getElementById('kpi-umid-sub').innerText = `Média: ${avgU} | Min: ${minU} | Max: ${maxU}`;
+
+      document.getElementById('kpi-gas').innerText = `${last.Gas_PPM_Comp} PPM`;
+      document.getElementById('kpi-gas-sub').innerText = `Média: ${avgG} | ADC: ${last.MQ_ADC}`;
+
+      document.getElementById('kpi-iqa').innerText = last.IQA;
+      document.getElementById('kpi-iqa-sub').innerText = last.IQA <= 50 ? 'Qualidade: BOA' : 'Qualidade: MODERADA';
+
+      document.getElementById('kpi-total').innerText = n.toLocaleString('pt-BR');
+      document.getElementById('kpi-total-sub').innerText = `Local: ${last.Localizacao || 'São Luís-MA'}`;
+    }
+
+    function renderCharts() {
+      if (!activeDataset.length) return;
+      const isDark = !document.body.classList.contains('light-theme');
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      // 1. Linha Temporal Mista
+      const domLine = document.getElementById('chart-timeline');
+      if (domLine) {
+        if (chartTimeline) chartTimeline.dispose();
+        chartTimeline = echarts.init(domLine);
+        chartTimeline.setOption({
+          tooltip: { trigger: 'axis' },
+          legend: { textStyle: { color: textColor }, data: ['Temperatura (°C)', 'Sensação (°C)', 'Gases (PPM)'] },
+          grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 10 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: activeDataset.map(d => d.Data_Hora), axisLabel: { color: textColor } },
+          yAxis: [
+            { type: 'value', name: '°C', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+            { type: 'value', name: 'PPM', axisLabel: { color: textColor }, splitLine: { show: false } }
+          ],
+          series: [
+            { name: 'Temperatura (°C)', type: 'line', smooth: true, data: activeDataset.map(d => d.Temperatura_C), itemStyle: { color: '#06b6d4' } },
+            { name: 'Sensação (°C)', type: 'line', smooth: true, lineStyle: { type: 'dashed' }, data: activeDataset.map(d => d.Sensacao_C), itemStyle: { color: '#f43f5e' } },
+            { name: 'Gases (PPM)', type: 'bar', yAxisIndex: 1, data: activeDataset.map(d => d.Gas_PPM_Comp), itemStyle: { color: 'rgba(59, 130, 246, 0.4)' } }
+          ]
+        });
+      }
+
+      // 2. Gauge
+      const domGauge = document.getElementById('chart-gauges');
+      if (domGauge) {
+        if (chartGauges) chartGauges.dispose();
+        chartGauges = echarts.init(domGauge);
+        const last = activeDataset[activeDataset.length - 1];
+        chartGauges.setOption({
+          series: [{
+            type: 'gauge', center: ['50%', '55%'], radius: '90%', min: 0, max: 60,
+            progress: { show: true, width: 14 },
+            axisLine: { lineStyle: { width: 14 } },
+            axisTick: { show: false },
+            splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
+            axisLabel: { distance: 16, color: textColor, fontSize: 10 },
+            pointer: { itemStyle: { color: '#06b6d4' } },
+            title: { offsetCenter: ['0%', '70%'], fontSize: 13, color: textColor },
+            detail: { valueAnimation: true, offsetCenter: ['0%', '90%'], fontSize: 18, color: textColor, formatter: '{value} °C' },
+            data: [{ value: last.Temperatura_C, name: 'Temperatura' }]
+          }]
+        });
+      }
+
+      // 3. Radar Multivariado
+      const domRadar = document.getElementById('chart-radar');
+      if (domRadar) {
+        if (chartRadar) chartRadar.dispose();
+        chartRadar = echarts.init(domRadar);
+        const last = activeDataset[activeDataset.length - 1];
+        chartRadar.setOption({
+          tooltip: {},
+          radar: {
+            indicator: [
+              { name: 'Temp (°C)', max: 50 },
+              { name: 'Umidade (%)', max: 100 },
+              { name: 'Gás/10 (PPM)', max: 60 },
+              { name: 'IQA', max: 100 },
+              { name: 'Sensação (°C)', max: 50 }
+            ],
+            axisName: { color: textColor }
+          },
+          series: [{
+            type: 'radar',
+            data: [{
+              value: [last.Temperatura_C, last.Umidade_Pct, last.Gas_PPM_Comp / 10, last.IQA, last.Sensacao_C],
+              name: 'Leitura Recente',
+              areaStyle: { color: 'rgba(6, 182, 212, 0.4)' },
+              lineStyle: { color: '#06b6d4', width: 2 }
+            }]
+          }]
+        });
+      }
+
+      // 4. Rosca TinyML
+      const domTiny = document.getElementById('chart-tinyml');
+      if (domTiny) {
+        if (chartTinyML) chartTinyML.dispose();
+        chartTinyML = echarts.init(domTiny);
+        const counts = {};
+        activeDataset.forEach(d => { counts[d.TinyML_Estado] = (counts[d.TinyML_Estado] || 0) + 1; });
+        chartTinyML.setOption({
+          tooltip: { trigger: 'item' },
+          legend: { bottom: '0', textStyle: { color: textColor } },
+          series: [{
+            name: 'TinyML', type: 'pie', radius: ['45%', '70%'],
+            itemStyle: { borderRadius: 8, borderColor: isDark ? '#070b14' : '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: Object.keys(counts).map(k => ({ name: k, value: counts[k] }))
+          }]
+        });
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      chartTimeline && chartTimeline.resize();
+      chartGauges && chartGauges.resize();
+      chartRadar && chartRadar.resize();
+      chartTinyML && chartTinyML.resize();
+    });
+
+    window.onload = loadDatasetFromStorage;
+  </script>
+</body>
+</html>

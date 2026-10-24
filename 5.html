@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 5: Indicadores Derivados & Fusão</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: rgba(15, 23, 42, 0.9);
+      --card-border: rgba(56, 189, 248, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+      --nav-bg: rgba(7, 11, 20, 0.96);
+      --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+      --input-bg: #1e293b;
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge { background: linear-gradient(135deg, var(--purple), var(--cyan)); color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1700px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+    .kpi-title { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .kpi-val { font-size: 26px; font-weight: 800; }
+    .kpi-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .chart-box-full {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column;
+    }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column;
+    }
+    .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .chart-canvas { width: 100%; height: 420px; }
+
+    .empty-warning {
+      background: rgba(244, 63, 94, 0.12); border: 1px solid var(--rose); border-radius: 10px;
+      padding: 16px; text-align: center; color: var(--text-main); font-size: 14px; display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">DERIVADOS</span>
+      <div class="brand-title">Módulo 5 — Indicadores Físico-Químicos Derivados & Coordenadas Paralelas</div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link active">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="empty-warning" id="empty-notice">
+      Aviso: Não há dados carregados no sistema. Por favor, aceda ao <a href="index.html" style="color:var(--cyan); font-weight:bold;">Hub Central</a> para carregar o CSV.
+    </div>
+
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-title">Índice de Thom (DI) Médio</div>
+        <div class="kpi-val" id="kpi-thom" style="color:var(--purple);">--.-</div>
+        <div class="kpi-desc">Classificação de Desconforto</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Pressão de Vapor (Ea) Média</div>
+        <div class="kpi-val" id="kpi-vapor">--.- hPa</div>
+        <div class="kpi-desc">Pressão parcial do vapor d'água</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Humidade Absoluta (AH)</div>
+        <div class="kpi-val" id="kpi-ah" style="color:var(--cyan);">--.- g/m³</div>
+        <div class="kpi-desc">Massa de água em suspensão</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Índice Composto de Risco</div>
+        <div class="kpi-val" id="kpi-icra" style="color:var(--green);">--.- / 100</div>
+        <div class="kpi-desc">Fusão Multivariada Normalizada</div>
+      </div>
+    </section>
+
+    <!-- 1. Coordenadas Paralelas (Brushing Multivariado) -->
+    <div class="chart-box-full">
+      <div class="chart-title">Análise Multivariada em Coordenadas Paralelas (Brushing Interativo nos Eixos)</div>
+      <div id="chart-parallel" class="chart-canvas" style="height: 480px;"></div>
+    </div>
+
+    <section class="charts-grid">
+      <!-- 2. Série Temporal dos Indicadores de Conforto e Vapor -->
+      <div class="chart-box">
+        <div class="chart-title">Dinâmica Temporal: Índice de Desconforto de Thom vs Humidade Absoluta (g/m³)</div>
+        <div id="chart-thom-ah" class="chart-canvas"></div>
+      </div>
+
+      <!-- 3. Funil de Classificação de Estresse Térmico / Thom -->
+      <div class="chart-box">
+        <div class="chart-title">Distribuição das Faixas de Desconforto Térmico (Funil)</div>
+        <div id="chart-funnel-thom" class="chart-canvas"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+      renderDerivedCharts();
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let rawData = [];
+    let derivedDataset = [];
+    let chartPar, chartThomAH, chartFunnel;
+
+    function init() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { rawData = JSON.parse(stored); } catch (e) { rawData = []; }
+      } else {
+        rawData = [];
+      }
+
+      if (!rawData.length) {
+        document.getElementById('empty-notice').style.display = 'block';
+        return;
+      }
+
+      computeDerivedVariables();
+      updateKPIs();
+      renderDerivedCharts();
+    }
+
+    function computeDerivedVariables() {
+      derivedDataset = rawData.map(d => {
+        const T = d.Temperatura_C;
+        const RH = d.Umidade_Pct;
+
+        // 1. Índice de Desconforto de Thom (DI)
+        const DI = T - 0.55 * (1 - 0.01 * RH) * (T - 14.5);
+
+        // 2. Pressão Parcial de Vapor d'Água (Ea em hPa)
+        const Ea = 6.112 * Math.exp((17.67 * T) / (T + 243.5)) * (RH / 100);
+
+        // 3. Humidade Absoluta (AH em g/m³)
+        const AH = (216.7 * Ea) / (T + 273.15);
+
+        // 4. Índice Composto de Risco (ICRA: 0 a 100)
+        const ICRA = Math.min(100, (d.IQA * 0.4) + (Math.abs(d.dT_dt_C_min) * 50) + (d.Gas_PPM_Comp > 450 ? 20 : 0));
+
+        return {
+          ...d,
+          DI: parseFloat(DI.toFixed(2)),
+          Ea: parseFloat(Ea.toFixed(2)),
+          AH: parseFloat(AH.toFixed(2)),
+          ICRA: parseFloat(ICRA.toFixed(1))
+        };
+      });
+    }
+
+    function updateKPIs() {
+      const n = derivedDataset.length;
+      const dis = derivedDataset.map(d => d.DI);
+      const eas = derivedDataset.map(d => d.Ea);
+      const ahs = derivedDataset.map(d => d.AH);
+      const icras = derivedDataset.map(d => d.ICRA);
+
+      const avgDI = (dis.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const avgEa = (eas.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const avgAH = (ahs.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const avgICRA = (icras.reduce((a,b)=>a+b,0)/n).toFixed(1);
+
+      document.getElementById('kpi-thom').innerText = avgDI;
+      document.getElementById('kpi-vapor').innerText = `${avgEa} hPa`;
+      document.getElementById('kpi-ah').innerText = `${avgAH} g/m³`;
+      document.getElementById('kpi-icra').innerText = `${avgICRA} / 100`;
+    }
+
+    function renderDerivedCharts() {
+      if (!derivedDataset.length) return;
+      const isDark = !document.body.classList.contains('light-theme');
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      // 1. Coordenadas Paralelas (Parallel Coordinates)
+      const domPar = document.getElementById('chart-parallel');
+      if (domPar) {
+        if (chartPar) chartPar.dispose();
+        chartPar = echarts.init(domPar);
+
+        // Reduzimos a amostra se for muito massiva para garantir máxima fluidez de renderização
+        const step = Math.max(1, Math.floor(derivedDataset.length / 400));
+        const sample = derivedDataset.filter((_, idx) => idx % step === 0);
+
+        const parData = sample.map(d => [
+          d.Temperatura_C,
+          d.Umidade_Pct,
+          d.Sensacao_C,
+          d.Gas_PPM_Comp,
+          d.IQA,
+          d.DI,
+          d.AH
+        ]);
+
+        chartPar.setOption({
+          parallelAxis: [
+            { dim: 0, name: 'Temp (°C)', min: 30, max: 40 },
+            { dim: 1, name: 'Humidade (%)', min: 50, max: 80 },
+            { dim: 2, name: 'Sensação (°C)', min: 35, max: 55 },
+            { dim: 3, name: 'Gás (PPM)', min: 350, max: 550 },
+            { dim: 4, name: 'IQA', min: 10, max: 50 },
+            { dim: 5, name: 'Índice Thom', min: 25, max: 35 },
+            { dim: 6, name: 'Humid Abs (g/m³)', min: 15, max: 35 }
+          ],
+          parallel: {
+            left: '5%', right: '8%', bottom: '12%', top: '15%',
+            parallelAxisDefault: {
+              type: 'value',
+              nameTextStyle: { color: textColor, fontSize: 12 },
+              axisLine: { lineStyle: { color: textColor } },
+              axisLabel: { color: textColor },
+              splitLine: { lineStyle: { color: gridColor } }
+            }
+          },
+          series: [{
+            type: 'parallel',
+            lineStyle: { width: 1.2, opacity: 0.35, color: '#06b6d4' },
+            data: parData
+          }]
+        });
+      }
+
+      // 2. Dinâmica Thom vs AH
+      const domThom = document.getElementById('chart-thom-ah');
+      if (domThom) {
+        if (chartThomAH) chartThomAH.dispose();
+        chartThomAH = echarts.init(domThom);
+        chartThomAH.setOption({
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['Índice de Thom (DI)', 'Humidade Absoluta (g/m³)'], textStyle: { color: textColor } },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: derivedDataset.map(d => d.Data_Hora), axisLabel: { color: textColor } },
+          yAxis: [
+            { type: 'value', name: 'DI', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+            { type: 'value', name: 'g/m³', axisLabel: { color: textColor }, splitLine: { show: false } }
+          ],
+          series: [
+            { name: 'Índice de Thom (DI)', type: 'line', smooth: true, data: derivedDataset.map(d => d.DI), itemStyle: { color: '#a855f7' } },
+            { name: 'Humidade Absoluta (g/m³)', type: 'line', smooth: true, yAxisIndex: 1, data: derivedDataset.map(d => d.AH), itemStyle: { color: '#06b6d4' } }
+          ]
+        });
+      }
+
+      // 3. Funil de Classificação de Thom
+      const domFunnel = document.getElementById('chart-funnel-thom');
+      if (domFunnel) {
+        if (chartFunnel) chartFunnel.dispose();
+        chartFunnel = echarts.init(domFunnel);
+
+        let semDesconforto = 0, desconfortoModerado = 0, desconfortoSevero = 0;
+        derivedDataset.forEach(d => {
+          if (d.DI < 27) semDesconforto++;
+          else if (d.DI < 29) desconfortoModerado++;
+          else desconfortoSevero++;
+        });
+
+        chartFunnel.setOption({
+          tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c} amostras ({d}%)' },
+          legend: { data: ['Confortável (<27)', 'Desconforto Moderado (27-29)', 'Desconforto Severo (>29)'], bottom: '0', textStyle: { color: textColor } },
+          series: [{
+            name: 'Classificação Thom',
+            type: 'funnel',
+            left: '10%', top: 20, bottom: 50, width: '80%',
+            min: 0,
+            sort: 'descending',
+            gap: 2,
+            label: { show: true, position: 'inside' },
+            data: [
+              { value: semDesconforto, name: 'Confortável (<27)', itemStyle: { color: '#10b981' } },
+              { value: desconfortoModerado, name: 'Desconforto Moderado (27-29)', itemStyle: { color: '#f59e0b' } },
+              { value: desconfortoSevero, name: 'Desconforto Severo (>29)', itemStyle: { color: '#f43f5e' } }
+            ]
+          }]
+        });
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      chartPar && chartPar.resize();
+      chartThomAH && chartThomAH.resize();
+      chartFunnel && chartFunnel.resize();
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>

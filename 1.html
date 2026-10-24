@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 1: Gestão de Dados & Relatórios</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --card-border: rgba(56, 189, 248, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --nav-bg: rgba(7, 11, 20, 0.96);
+      --input-bg: #1e293b;
+      --row-hover: rgba(56, 189, 248, 0.08);
+      --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --input-bg: #ffffff;
+      --row-hover: rgba(241, 245, 249, 1);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1750px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .control-panel {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow);
+    }
+    .action-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .btn-cyan { background: var(--cyan); color: #000; }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-blue { background: var(--blue); color: #fff; }
+    .btn-amber { background: var(--amber); color: #000; }
+    .btn-outline { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); }
+    .btn-danger { background: var(--rose); color: #fff; }
+
+    .filters-grid { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .filter-input {
+      background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+
+    .table-wrapper {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      overflow-x: auto; max-height: 540px; box-shadow: var(--shadow);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    th {
+      position: sticky; top: 0; background: var(--input-bg); color: var(--text-muted);
+      padding: 10px 12px; font-weight: 700; border-bottom: 2px solid var(--card-border); white-space: nowrap; cursor: pointer;
+    }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
+    tr:hover { background: var(--row-hover); }
+    .cell-editable { outline: none; border-radius: 4px; padding: 2px 4px; }
+    .cell-editable:focus { background: rgba(56, 189, 248, 0.2); border: 1px solid var(--cyan); }
+
+    .pagination-bar {
+      display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; flex-wrap: wrap; gap: 10px;
+    }
+
+    /* Modais */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 2000;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px;
+      width: 100%; max-width: 700px; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+      max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow);
+    }
+    .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">CRUD & RELATÓRIOS</span>
+      <div class="brand-title">Módulo 1 — Gestão de Dados, Edição & Exportador</div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link active">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="control-panel">
+      <div class="action-row">
+        <input type="file" id="fileCsvInput" accept=".csv" style="display:none;" onchange="importNewCSV(event)">
+        <button class="btn btn-cyan" onclick="document.getElementById('fileCsvInput').click()">📥 Importar CSV</button>
+        <button class="btn btn-green" onclick="openInsertModal()">➕ Adicionar Registro</button>
+        <button class="btn btn-blue" onclick="openReportModal()">📊 Painel de Relatório & Exportação</button>
+        <button class="btn btn-outline" onclick="exportStandardCSV()">💾 Exportar CSV Base</button>
+        <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpar Base</button>
+      </div>
+
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label>Filtro por Localização:</label>
+          <select id="f-local" class="filter-input" onchange="filterData()">
+            <option value="">Todas as Localidades</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Busca Livre:</label>
+          <input type="text" id="f-search" class="filter-input" placeholder="Buscar texto..." oninput="filterData()">
+        </div>
+        <div class="filter-item">
+          <label>Temperatura (°C):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="f-tmin" class="filter-input" style="width:70px;" placeholder="Min" oninput="filterData()">
+            <input type="number" id="f-tmax" class="filter-input" style="width:70px;" placeholder="Max" oninput="filterData()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Umidade (%):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="f-umin" class="filter-input" style="width:70px;" placeholder="Min" oninput="filterData()">
+            <input type="number" id="f-umax" class="filter-input" style="width:70px;" placeholder="Max" oninput="filterData()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Gás Mín (PPM):</label>
+          <input type="number" id="f-gmin" class="filter-input" style="width:85px;" placeholder="Min" oninput="filterData()">
+        </div>
+        <div class="filter-item">
+          <label>TinyML Estado:</label>
+          <select id="f-tml" class="filter-input" onchange="filterData()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ações</th>
+            <th onclick="sortBy('Data_Hora')">Data_Hora</th>
+            <th onclick="sortBy('Timestamp_Sec')">Sec</th>
+            <th onclick="sortBy('Localizacao')">Localização</th>
+            <th onclick="sortBy('Temperatura_C')">Temp (°C)</th>
+            <th onclick="sortBy('Umidade_Pct')">Umid (%)</th>
+            <th onclick="sortBy('Gas_PPM_Comp')">Gás (PPM)</th>
+            <th onclick="sortBy('IQA')">IQA</th>
+            <th onclick="sortBy('Sensacao_C')">Sensação (°C)</th>
+            <th onclick="sortBy('Orvalho_C')">Orvalho (°C)</th>
+            <th onclick="sortBy('dT_dt_C_min')">dT/dt</th>
+            <th onclick="sortBy('MQ_ADC')">MQ ADC</th>
+            <th onclick="sortBy('Chuva_ADC')">Chuva ADC</th>
+            <th onclick="sortBy('Chuva_Det')">Chuva</th>
+            <th onclick="sortBy('Fogo_Det')">Fogo</th>
+            <th onclick="sortBy('Risco')">Risco</th>
+            <th onclick="sortBy('TinyML_Estado')">TinyML</th>
+          </tr>
+        </thead>
+        <tbody id="table-rows">
+          <tr><td colspan="17" style="text-align:center; padding: 30px; color:var(--text-muted);">Nenhum dado importado. Clique em 'Importar CSV' acima.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <div>
+        <span id="page-counter">Nenhum registro</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <label style="font-size: 13px;">Linhas por página:</label>
+        <select id="select-pagesize" class="filter-input" onchange="setPageSize(this.value)">
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="500">500</option>
+          <option value="2000">2000</option>
+        </select>
+        <button class="btn btn-outline" onclick="prevPage()">◀</button>
+        <button class="btn btn-outline" onclick="nextPage()">▶</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Adicionar Registro -->
+  <div class="modal-backdrop" id="modal-add">
+    <div class="modal-box">
+      <h3>Inserir Novo Registro de Telemetria</h3>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div class="filter-item">
+          <label>Data/Hora:</label>
+          <input type="text" id="add-data" class="filter-input" placeholder="DD/MM/AAAA HH:MM">
+        </div>
+        <div class="filter-item">
+          <label>Localização / Estação:</label>
+          <input type="text" id="add-local" class="filter-input" value="São Luís-MA">
+        </div>
+        <div class="filter-item">
+          <label>Timestamp (Sec):</label>
+          <input type="number" id="add-sec" class="filter-input" value="0">
+        </div>
+        <div class="filter-item">
+          <label>Temperatura (°C):</label>
+          <input type="number" step="0.1" id="add-temp" class="filter-input" value="34.0">
+        </div>
+        <div class="filter-item">
+          <label>Umidade (%):</label>
+          <input type="number" step="0.1" id="add-umid" class="filter-input" value="60.0">
+        </div>
+        <div class="filter-item">
+          <label>Gás Compensado (PPM):</label>
+          <input type="number" step="0.1" id="add-gas" class="filter-input" value="400.0">
+        </div>
+        <div class="filter-item">
+          <label>IQA:</label>
+          <input type="number" id="add-iqa" class="filter-input" value="25">
+        </div>
+        <div class="filter-item">
+          <label>Estado TinyML:</label>
+          <input type="text" id="add-tml" class="filter-input" value="AMBIENTE_ESTAVEL">
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-outline" onclick="closeInsertModal()">Cancelar</button>
+        <button class="btn btn-cyan" onclick="saveNewRecord()">Salvar Leitura</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Relatório & Exportação -->
+  <div class="modal-backdrop" id="modal-report">
+    <div class="modal-box">
+      <h3>Módulo de Relatórios — Seleção e Exportação Personalizada</h3>
+      <p style="font-size:13px; color:var(--text-muted);">
+        Marque os campos que devem compor a exportação. O relatório respeita rigorosamente os filtros de localização e faixas aplicados na tela:
+      </p>
+      
+      <div class="checkbox-grid" id="report-columns-selection">
+        <!-- Renderizado dinamicamente com as colunas reais -->
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline" style="font-size:11px;" onclick="toggleAllColumns(true)">Selecionar Todas</button>
+          <button class="btn btn-outline" style="font-size:11px;" onclick="toggleAllColumns(false)">Desmarcar Todas</button>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="closeReportModal()">Fechar</button>
+          <button class="btn btn-green" onclick="generateReport('csv')">📄 Exportar CSV</button>
+          <button class="btn btn-blue" onclick="generateReport('html')">🌐 Gerar HTML</button>
+          <button class="btn btn-outline" onclick="generateReport('json')">📦 Gerar JSON</button>
+          <button class="btn btn-amber" onclick="generateReport('pdf')">🖨️ Imprimir / PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let masterData = [];
+    let viewData = [];
+    let page = 1;
+    let pageSize = 50;
+    let currentSort = { col: 'Timestamp_Sec', asc: true };
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) return [];
+      const delimiter = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(delimiter).map(h => h.trim());
+
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const vals = line.split(delimiter);
+        const row = {};
+        headers.forEach((h, idx) => {
+          let val = (vals[idx] || '').trim();
+          val = val.replace(',', '.');
+          if (!isNaN(val) && val !== '') {
+            row[h] = parseFloat(val);
+          } else {
+            row[h] = vals[idx] ? vals[idx].trim() : '';
+          }
+        });
+        data.push(row);
+      }
+      return data;
+    }
+
+    function importNewCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const parsed = parseCSV(evt.target.result);
+        if (parsed.length > 0) {
+          masterData = parsed;
+          localStorage.setItem('atalaia_master_dataset', JSON.stringify(parsed));
+          initModule();
+          alert(`CSV importado com sucesso! ${parsed.length.toLocaleString('pt-BR')} linhas registradas.`);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function initModule() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { masterData = JSON.parse(stored); } catch (e) { masterData = []; }
+      } else {
+        masterData = [];
+      }
+      populateFilters();
+      populateReportCheckboxes();
+      viewData = [...masterData];
+      renderTable();
+    }
+
+    function populateFilters() {
+      const locSelect = document.getElementById('f-local');
+      const tmlSelect = document.getElementById('f-tml');
+
+      const locs = new Set();
+      const tmls = new Set();
+
+      masterData.forEach(d => {
+        if (d.Localizacao) locs.add(d.Localizacao);
+        if (d.TinyML_Estado) tmls.add(d.TinyML_Estado);
+      });
+
+      locSelect.innerHTML = '<option value="">Todas as Localidades</option>';
+      locs.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.innerText = l;
+        locSelect.appendChild(opt);
+      });
+
+      tmlSelect.innerHTML = '<option value="">Todos</option>';
+      tmls.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.innerText = t;
+        tmlSelect.appendChild(opt);
+      });
+    }
+
+    function populateReportCheckboxes() {
+      const container = document.getElementById('report-columns-selection');
+      container.innerHTML = '';
+      if (!masterData.length) return;
+      const cols = Object.keys(masterData[0]);
+      cols.forEach(c => {
+        const label = document.createElement('label');
+        label.style.display = 'flex';
+        label.style.alignItems = 'center';
+        label.style.gap = '6px';
+        label.innerHTML = `<input type="checkbox" value="${c}" checked> ${c}`;
+        container.appendChild(label);
+      });
+    }
+
+    function toggleAllColumns(state) {
+      const boxes = document.querySelectorAll('#report-columns-selection input[type="checkbox"]');
+      boxes.forEach(b => b.checked = state);
+    }
+
+    function filterData() {
+      const loc = document.getElementById('f-local').value;
+      const q = document.getElementById('f-search').value.toLowerCase();
+      const tmin = parseFloat(document.getElementById('f-tmin').value);
+      const tmax = parseFloat(document.getElementById('f-tmax').value);
+      const umin = parseFloat(document.getElementById('f-umin').value);
+      const umax = parseFloat(document.getElementById('f-umax').value);
+      const gmin = parseFloat(document.getElementById('f-gmin').value);
+      const tml = document.getElementById('f-tml').value;
+
+      viewData = masterData.filter(d => {
+        if (loc && d.Localizacao !== loc) return false;
+        if (q && !JSON.stringify(d).toLowerCase().includes(q)) return false;
+        if (!isNaN(tmin) && d.Temperatura_C < tmin) return false;
+        if (!isNaN(tmax) && d.Temperatura_C > tmax) return false;
+        if (!isNaN(umin) && d.Umidade_Pct < umin) return false;
+        if (!isNaN(umax) && d.Umidade_Pct > umax) return false;
+        if (!isNaN(gmin) && d.Gas_PPM_Comp < gmin) return false;
+        if (tml && d.TinyML_Estado !== tml) return false;
+        return true;
+      });
+
+      page = 1;
+      renderTable();
+    }
+
+    function sortBy(col) {
+      if (currentSort.col === col) currentSort.asc = !currentSort.asc;
+      else { currentSort.col = col; currentSort.asc = true; }
+
+      viewData.sort((a,b) => {
+        let va = a[col], vb = b[col];
+        if (va < vb) return currentSort.asc ? -1 : 1;
+        if (va > vb) return currentSort.asc ? 1 : -1;
+        return 0;
+      });
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-rows');
+      tbody.innerHTML = '';
+      const total = viewData.length;
+      if (!total) {
+        tbody.innerHTML = '<tr><td colspan="17" style="text-align:center; padding: 30px; color:var(--text-muted);">Nenhum dado encontrado para os filtros atuais.</td></tr>';
+        document.getElementById('page-counter').innerText = '0 registros';
+        return;
+      }
+
+      const start = (page - 1) * pageSize;
+      const end = Math.min(start + pageSize, total);
+      document.getElementById('page-counter').innerText = `Mostrando ${start + 1} a ${end} de ${total.toLocaleString('pt-BR')} registros`;
+
+      const slice = viewData.slice(start, end);
+      slice.forEach(r => {
+        const actualIdx = masterData.indexOf(r);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><button style="border:none; background:none; cursor:pointer;" onclick="deleteRow(${actualIdx})">❌</button></td>
+          <td>${r.Data_Hora || ''}</td>
+          <td>${r.Timestamp_Sec ?? ''}</td>
+          <td>${r.Localizacao || ''}</td>
+          <td class="cell-editable" contenteditable="true" onblur="updateRow(${actualIdx}, 'Temperatura_C', this.innerText)">${r.Temperatura_C ?? ''}</td>
+          <td class="cell-editable" contenteditable="true" onblur="updateRow(${actualIdx}, 'Umidade_Pct', this.innerText)">${r.Umidade_Pct ?? ''}</td>
+          <td class="cell-editable" contenteditable="true" onblur="updateRow(${actualIdx}, 'Gas_PPM_Comp', this.innerText)">${r.Gas_PPM_Comp ?? ''}</td>
+          <td class="cell-editable" contenteditable="true" onblur="updateRow(${actualIdx}, 'IQA', this.innerText)">${r.IQA ?? ''}</td>
+          <td>${r.Sensacao_C ?? ''}</td>
+          <td>${r.Orvalho_C ?? ''}</td>
+          <td>${r.dT_dt_C_min ?? ''}</td>
+          <td>${r.MQ_ADC ?? ''}</td>
+          <td>${r.Chuva_ADC ?? ''}</td>
+          <td>${r.Chuva_Det ?? ''}</td>
+          <td>${r.Fogo_Det ?? ''}</td>
+          <td>${r.Risco || ''}</td>
+          <td>${r.TinyML_Estado || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateRow(idx, field, value) {
+      if (idx < 0 || idx >= masterData.length) return;
+      const num = parseFloat(value);
+      masterData[idx][field] = isNaN(num) ? value : num;
+      if (field === 'Temperatura_C' || field === 'Umidade_Pct') {
+        const T = masterData[idx].Temperatura_C;
+        const RH = masterData[idx].Umidade_Pct;
+        if (T !== undefined && RH !== undefined) {
+          masterData[idx].Orvalho_C = parseFloat((T - ((100 - RH) / 5)).toFixed(1));
+        }
+      }
+      localStorage.setItem('atalaia_master_dataset', JSON.stringify(masterData));
+    }
+
+    function deleteRow(idx) {
+      if (confirm('Deseja realmente excluir esta leitura de telemetria?')) {
+        masterData.splice(idx, 1);
+        localStorage.setItem('atalaia_master_dataset', JSON.stringify(masterData));
+        filterData();
+      }
+    }
+
+    function clearAllData() {
+      if (confirm('ATENÇÃO: Deseja apagar todas as leituras da memória local?')) {
+        masterData = [];
+        viewData = [];
+        localStorage.removeItem('atalaia_master_dataset');
+        renderTable();
+      }
+    }
+
+    function prevPage() { if (page > 1) { page--; renderTable(); } }
+    function nextPage() { if ((page * pageSize) < viewData.length) { page++; renderTable(); } }
+    function setPageSize(v) { pageSize = parseInt(v); page = 1; renderTable(); }
+
+    function openInsertModal() { document.getElementById('modal-add').style.display = 'flex'; }
+    function closeInsertModal() { document.getElementById('modal-add').style.display = 'none'; }
+    function openReportModal() { document.getElementById('modal-report').style.display = 'flex'; }
+    function closeReportModal() { document.getElementById('modal-report').style.display = 'none'; }
+
+    function saveNewRecord() {
+      const t = parseFloat(document.getElementById('add-temp').value);
+      const u = parseFloat(document.getElementById('add-umid').value);
+      const obj = {
+        Data_Hora: document.getElementById('add-data').value || new Date().toLocaleString('pt-BR'),
+        Timestamp_Sec: parseInt(document.getElementById('add-sec').value) || 0,
+        Localizacao: document.getElementById('add-local').value || 'São Luís-MA',
+        Temperatura_C: t,
+        Umidade_Pct: u,
+        Gas_PPM_Comp: parseFloat(document.getElementById('add-gas').value) || 0,
+        IQA: parseInt(document.getElementById('add-iqa').value) || 0,
+        Sensacao_C: parseFloat((t + 5).toFixed(1)),
+        Orvalho_C: parseFloat((t - ((100 - u) / 5)).toFixed(1)),
+        dT_dt_C_min: 0.0,
+        MQ_ADC: 1350,
+        Chuva_ADC: 4095,
+        Chuva_Det: 0,
+        Fogo_Det: 0,
+        Risco: 'NORMAL',
+        TinyML_Estado: document.getElementById('add-tml').value || 'AMBIENTE_ESTAVEL',
+        Qualidade: 0
+      };
+      masterData.unshift(obj);
+      localStorage.setItem('atalaia_master_dataset', JSON.stringify(masterData));
+      closeInsertModal();
+      filterData();
+      alert('Registro gravado com sucesso!');
+    }
+
+    function exportStandardCSV() {
+      if (!masterData.length) return alert('Sem registros para exportar.');
+      const headers = Object.keys(masterData[0]);
+      let csv = headers.join(';') + '\n';
+      masterData.forEach(r => {
+        csv += headers.map(h => {
+          let v = r[h];
+          if (typeof v === 'number') return v.toString().replace('.', ',');
+          return v ?? '';
+        }).join(';') + '\n';
+      });
+      downloadBlob(csv, `atalaia_telemetria_export_${Date.now()}.csv`, 'text/csv;charset=utf-8;');
+    }
+
+    function generateReport(format) {
+      if (!viewData.length) return alert('Sem dados filtrados.');
+      const checkedBoxes = Array.from(document.querySelectorAll('#report-columns-selection input:checked'));
+      const selectedCols = checkedBoxes.map(b => b.value);
+
+      if (!selectedCols.length) return alert('Selecione ao menos uma coluna.');
+
+      if (format === 'csv') {
+        let csv = selectedCols.join(';') + '\n';
+        viewData.forEach(r => {
+          csv += selectedCols.map(c => {
+            let val = r[c];
+            if (typeof val === 'number') return val.toString().replace('.', ',');
+            return val ?? '';
+          }).join(';') + '\n';
+        });
+        downloadBlob(csv, `relatorio_atalaia_${Date.now()}.csv`, 'text/csv;charset=utf-8;');
+      } else if (format === 'json') {
+        const jsonSlice = viewData.map(r => {
+          const item = {};
+          selectedCols.forEach(c => item[c] = r[c]);
+          return item;
+        });
+        downloadBlob(JSON.stringify(jsonSlice, null, 2), `relatorio_atalaia_${Date.now()}.json`, 'application/json');
+      } else if (format === 'html') {
+        let tableRows = viewData.map(r => `<tr>${selectedCols.map(c => `<td style="border:1px solid #ddd; padding:6px;">${r[c] ?? ''}</td>`).join('')}</tr>`).join('');
+        let htmlDoc = `
+          <!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório Telemetria Atalaia 3</title>
+          <style>body{font-family:sans-serif; padding:24px;} table{border-collapse:collapse; width:100%; font-size:12px;} th{background:#0284c7; color:#fff; padding:8px; border:1px solid #ccc; text-align:left;}</style>
+          </head><body>
+          <h2>Relatório de Telemetria — Sistema ATALAIA 3</h2>
+          <p>Gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Leituras Filtradas: ${viewData.length}</p>
+          <table><thead><tr>${selectedCols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table>
+          </body></html>
+        `;
+        downloadBlob(htmlDoc, `relatorio_atalaia_${Date.now()}.html`, 'text/html;charset=utf-8;');
+      } else if (format === 'pdf') {
+        closeReportModal();
+        window.print();
+      }
+    }
+
+    function downloadBlob(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    window.onload = initModule;
+  </script>
+</body>
+</html>

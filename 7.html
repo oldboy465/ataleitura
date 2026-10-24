@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 7: Glossário & Metodologia</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: rgba(15, 23, 42, 0.9);
+      --card-border: rgba(56, 189, 248, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --nav-bg: rgba(7, 11, 20, 0.96);
+      --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+      --input-bg: #1e293b;
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge { background: linear-gradient(135deg, var(--green), var(--blue)); color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+    .search-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 18px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px;
+    }
+    .search-input {
+      width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none;
+    }
+
+    .section-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .section-title::before { content: ''; width: 4px; height: 20px; background: var(--cyan); border-radius: 2px; }
+
+    .glossary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+    .glossary-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px;
+    }
+    .term-badge { font-size: 11px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.5px; }
+    .term-name { font-size: 16px; font-weight: 700; }
+    .term-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    .formula-box {
+      background: rgba(6, 182, 212, 0.08); border-left: 3px solid var(--cyan);
+      padding: 10px 14px; border-radius: 0 8px 8px 0; font-family: monospace; font-size: 13px; color: var(--text-main);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">GLOSSÁRIO</span>
+      <div class="brand-title">Módulo 7 — Metodologia, Fórmulas & Engenharia do ATALAIA 3</div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link active">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="search-card">
+      <input type="text" id="glossary-search" class="search-input" placeholder="🔍 Filtrar termos técnicos, fórmulas ou sensores..." oninput="filterGlossary()">
+    </div>
+
+    <div>
+      <div class="section-title">Parâmetros de Hardware & Sensores</div>
+      <div class="glossary-grid" id="hw-grid">
+        <div class="glossary-card" data-term="esp32 nodemcu-32s microcontroller">
+          <div class="term-badge">Núcleo Computacional</div>
+          <div class="term-name">ESP32 NodeMCU-32S</div>
+          <div class="term-desc">Microcontrolador de 32 bits dual-core Tensilica Xtensa LX6, com Wi-Fi/Bluetooth e conversor ADC de 12 bits (0 a 4095 contagens). Responsável pela aquisição, computação edge TinyML e despacho telemétrico.</div>
+        </div>
+        <div class="glossary-card" data-term="mq-135 sensor gas ppm adc qualidade do ar">
+          <div class="term-badge">Sensor Químico</div>
+          <div class="term-name">Sensor MQ-135 (SnO2)</div>
+          <div class="term-desc">Sensor resistivo baseado em dióxido de estanho. A condutância superficial varia na presença de gases nocivos (NH3, NOx, álcool, benzeno, fumo e CO2). A leitura bruta analógica é expressa na variável <code>MQ_ADC</code>.</div>
+        </div>
+        <div class="glossary-card" data-term="dht22 dht11 temperatura umidade">
+          <div class="term-badge">Termohigrometria</div>
+          <div class="term-name">Sensor DHT22 / DHT11</div>
+          <div class="term-desc">Módulo termohigrométrico digital composto por um elemento capacitivo para humidade e um termístor NTC para temperatura, fornecendo leituras calibradas com resolução decimal.</div>
+        </div>
+        <div class="glossary-card" data-term="chuva precipitação adc condutancia">
+          <div class="term-badge">Sensor de Precipitação</div>
+          <div class="term-name">Sensor de Chuva Resistivo</div>
+          <div class="term-desc">Grelha resistiva que monitoriza a presença de gotas de água por diminuição de impedância. Fornece o valor analógico contínuo <code>Chuva_ADC</code> e a flag lógica de saturação <code>Chuva_Det</code>.</div>
+        </div>
+        <div class="glossary-card" data-term="fogo chama infravermelho ir">
+          <div class="term-badge">Sensor de Incêndio</div>
+          <div class="term-name">Sensor de Chama por Fototransístor IR</div>
+          <div class="term-desc">Sensor sensível ao comprimento de onda característico da radiação de chamas (760 nm a 1100 nm). Gera o sinal binário <code>Fogo_Det</code> em caso de combustão próxima.</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Modelos Físico-Matemáticos & Formulações</div>
+      <div class="glossary-grid" id="math-grid">
+        <div class="glossary-card" data-term="ponto de orvalho magnus tetens condensacao">
+          <div class="term-badge">Equação de Estado</div>
+          <div class="term-name">Ponto de Orvalho (Magnus-Tetens)</div>
+          <div class="term-desc">Temperatura na qual o vapor d'água atinge a saturação à pressão atmosférica constante.</div>
+          <div class="formula-box">
+            &gamma;(T, RH) = (17.27 &middot; T) / (237.7 + T) + ln(RH / 100)<br>
+            T_dew = (237.7 &middot; &gamma;) / (17.27 - &gamma;)
+          </div>
+        </div>
+
+        <div class="glossary-card" data-term="sensacao termica heat index rothfusz steadman">
+          <div class="term-badge">Biometeorologia</div>
+          <div class="term-name">Sensação Térmica (Índice de Calor)</div>
+          <div class="term-desc">Avaliação da temperatura aparente percebida pelo corpo humano em função do ar seco e do bloqueio evaporativo provocado pela humidade relativa.</div>
+          <div class="formula-box">
+            HI = c1 + c2&middot;T + c3&middot;RH + c4&middot;T&middot;RH + c5&middot;T&sup2; + c6&middot;RH&sup2; ...
+          </div>
+        </div>
+
+        <div class="glossary-card" data-term="indice de desconforto de thom di conforto">
+          <div class="term-badge">Conforto Ambiental</div>
+          <div class="term-name">Índice de Desconforto de Thom (DI)</div>
+          <div class="term-desc">Avaliação empírica do estresse bioclimático: &lt;21 (Sem desconforto), 21-24 (Confortável), 25-27 (Desconforto ligeiro), &gt;27 (Desconforto severo).</div>
+          <div class="formula-box">
+            DI = T - 0.55 &middot; (1 - 0.01 &middot; RH) &middot; (T - 14.5)
+          </div>
+        </div>
+
+        <div class="glossary-card" data-term="pressao parcial de vapor ea humidade absoluta">
+          <div class="term-badge">Psicrometria</div>
+          <div class="term-name">Pressão de Vapor (Ea) & Humidade Absoluta (AH)</div>
+          <div class="term-desc">Massa efetiva de água contida num metro cúbico de ar, derivada da pressão parcial saturada.</div>
+          <div class="formula-box">
+            Ea = 6.112 &middot; exp((17.67 &middot; T) / (T + 243.5)) &middot; (RH / 100)<br>
+            AH = (216.7 &middot; Ea) / (T + 273.15) [g/m&sup3;]
+          </div>
+        </div>
+
+        <div class="glossary-card" data-term="taxa dt dt derivada temperatura tempo">
+          <div class="term-badge">Cinética Térmica</div>
+          <div class="term-name">Gradiente Temporal de Temperatura (dT/dt)</div>
+          <div class="term-desc">Derivada discreta de primeira ordem calculada a cada minuto para identificação de variações repentinas causadas por fluxos de ar ou fontes térmicas.</div>
+          <div class="formula-box">
+            dT/dt = (T_t - T_{t - &Delta;t}) / &Delta;t [&deg;C/min]
+          </div>
+        </div>
+
+        <div class="glossary-card" data-term="pearson correlacao bivariada estatistica r">
+          <div class="term-badge">Estatística Bivariada</div>
+          <div class="term-name">Coeficiente de Correlação de Pearson (r)</div>
+          <div class="term-desc">Mede o grau de correlação linear entre duas variáveis quantitativas contínuas. Varia entre -1 e +1.</div>
+          <div class="formula-box">
+            r = &sum;((X - X_m)(Y - Y_m)) / sqrt(&sum;(X - X_m)&sup2; &middot; &sum;(Y - Y_m)&sup2;)
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    function filterGlossary() {
+      const q = document.getElementById('glossary-search').value.toLowerCase();
+      const cards = document.querySelectorAll('.glossary-card');
+      cards.forEach(c => {
+        const text = (c.innerText + ' ' + (c.getAttribute('data-term') || '')).toLowerCase();
+        c.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

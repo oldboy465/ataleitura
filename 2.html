@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 2: Gases & Qualidade do Ar (IQA)</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #050811;
+      --card-bg: rgba(13, 20, 36, 0.88);
+      --card-border: rgba(56, 189, 248, 0.28);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.4);
+      --blue: #3b82f6;
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.4);
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.4);
+      --nav-bg: rgba(5, 8, 17, 0.96);
+      --shadow: 0 10px 35px -10px rgba(0, 0, 0, 0.7);
+      --input-bg: #131d31;
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+      --cyan-glow: transparent;
+      --green-glow: transparent;
+      --rose-glow: transparent;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.15); border-color: rgba(56, 189, 248, 0.25); }
+      50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.35); border-color: rgba(56, 189, 248, 0.55); }
+    }
+    @keyframes radarSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;
+    }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1750px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .control-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px;
+      display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow);
+    }
+    .top-action-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-live { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #fff; box-shadow: 0 0 15px var(--cyan-glow); }
+    .btn-live.active { background: linear-gradient(135deg, var(--rose), var(--amber)); box-shadow: 0 0 20px var(--rose-glow); }
+    .btn-outline { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); }
+
+    .filters-grid { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .filter-input {
+      background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 7px 12px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+    .kpi-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); position: relative; overflow: hidden; animation: pulseGlow 4s infinite ease-in-out;
+    }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan); }
+    .kpi-title { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .kpi-val { font-size: 28px; font-weight: 800; }
+    .kpi-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .charts-grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .charts-grid-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) {
+      .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
+    }
+
+    .chart-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative;
+    }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .chart-title { font-size: 15px; font-weight: 700; }
+    .chart-canvas { width: 100%; height: 380px; }
+
+    .hud-ticker {
+      font-family: monospace; font-size: 12px; color: var(--cyan); padding: 4px 10px;
+      background: rgba(6, 182, 212, 0.1); border-radius: 4px; border: 1px solid var(--card-border);
+    }
+    .empty-warning {
+      background: rgba(244, 63, 94, 0.12); border: 1px solid var(--rose); border-radius: 10px;
+      padding: 18px; text-align: center; color: var(--text-main); font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">MQ-135 & IQA</span>
+      <div>
+        <div class="brand-title">Módulo 2 — Monitoramento Avançado de Gases & Qualidade Atmosférica</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link active">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="empty-warning" id="empty-notice" style="display:none;">
+      Nenhum registro encontrado em memória. Importe o arquivo CSV através do <a href="index.html" style="color:var(--cyan); font-weight:bold;">Hub Central</a>.
+    </div>
+
+    <!-- Painel de Filtros e Modo Live Replay -->
+    <section class="control-card" id="control-section">
+      <div class="top-action-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button class="btn btn-live" id="btn-live-toggle" onclick="toggleLiveReplay()">
+            ▶ Iniciar Simulação em Tempo Real (Live Replay)
+          </button>
+          <span class="hud-ticker" id="live-indicator">STATUS: ESTÁTICO</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="file" id="localCsvInput" accept=".csv" style="display:none;" onchange="handleLocalUpload(event)">
+          <button class="btn btn-outline" onclick="document.getElementById('localCsvInput').click()">📥 Ingerir Outro CSV</button>
+          <button class="btn btn-outline" onclick="resetFilters()">Resetar Filtros</button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label>Localização / Estação:</label>
+          <select id="filt-local" class="filter-input" onchange="runFilterPipeline()">
+            <option value="">Todas as Localidades</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Gás PPM Compensado:</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="filt-gmin" class="filter-input" style="width:80px;" placeholder="Min" oninput="runFilterPipeline()">
+            <input type="number" id="filt-gmax" class="filter-input" style="width:80px;" placeholder="Max" oninput="runFilterPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Faixa IQA:</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="filt-iqamin" class="filter-input" style="width:75px;" placeholder="Min" oninput="runFilterPipeline()">
+            <input type="number" id="filt-iqamax" class="filter-input" style="width:75px;" placeholder="Max" oninput="runFilterPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Faixa ADC Bruto (MQ-135):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="filt-adcmin" class="filter-input" style="width:80px;" placeholder="Min" oninput="runFilterPipeline()">
+            <input type="number" id="filt-adcmax" class="filter-input" style="width:80px;" placeholder="Max" oninput="runFilterPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Estado TinyML:</label>
+          <select id="filt-tml" class="filter-input" onchange="runFilterPipeline()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs Dinâmicos de Gás -->
+    <section class="kpi-row" id="kpi-section">
+      <div class="kpi-card" style="--cyan: var(--cyan);">
+        <div class="kpi-title">Concentração Atual / Média</div>
+        <div class="kpi-val" id="kpi-gas-val">-- PPM</div>
+        <div class="kpi-desc" id="kpi-gas-sub">Média: -- | Desvio: --</div>
+      </div>
+      <div class="kpi-card" style="--cyan: var(--green);">
+        <div class="kpi-title">IQA Atmosférico Instantâneo</div>
+        <div class="kpi-val" id="kpi-iqa-val">-- / 500</div>
+        <div class="kpi-desc" id="kpi-iqa-sub">Classificação: --</div>
+      </div>
+      <div class="kpi-card" style="--cyan: var(--amber);">
+        <div class="kpi-title">Sensor MQ-135 Analógico</div>
+        <div class="kpi-val" id="kpi-adc-val">--</div>
+        <div class="kpi-desc">Conversor 12-bit ESP32 (0-4095)</div>
+      </div>
+      <div class="kpi-card" style="--cyan: var(--rose);">
+        <div class="kpi-title">Amostras Filtradas / Picos</div>
+        <div class="kpi-val" id="kpi-samples-val">0</div>
+        <div class="kpi-desc" id="kpi-peak-val">Pico máximo: -- PPM</div>
+      </div>
+    </section>
+
+    <!-- Gráficos Principais -->
+    <section class="charts-grid-main" id="charts-main">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Curva Dinâmica de Concentração de Gás (PPM) & Faixas Normativas Conama</div>
+          <span class="hud-ticker">VISUALMAP PIECES</span>
+        </div>
+        <div id="chart-gas-timeline" class="chart-canvas"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Medidor Dinâmico de Qualidade (IQA & PPM)</div>
+          <span class="hud-ticker">GAUGE DUPLO</span>
+        </div>
+        <div id="chart-gas-gauges" class="chart-canvas"></div>
+      </div>
+    </section>
+
+    <!-- Gráficos Secundários -->
+    <section class="charts-grid-secondary" id="charts-secondary">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Dispersão Bivariada: ADC Bruto vs. PPM Compensado</div>
+          <span class="hud-ticker">CALIBRAÇÃO MQ-135</span>
+        </div>
+        <div id="chart-gas-scatter" class="chart-canvas"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Histograma de Frequência & Distribuição de Densidade</div>
+          <span class="hud-ticker">HISTOGRAMA</span>
+        </div>
+        <div id="chart-gas-hist" class="chart-canvas"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+      renderAllCharts();
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let rawDataset = [];
+    let currentFiltered = [];
+    let chartTimeline, chartGauges, chartScatter, chartHist;
+    let liveTimer = null;
+    let liveIndex = 0;
+
+    function init() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { rawDataset = JSON.parse(stored); } catch (e) { rawDataset = []; }
+      } else {
+        rawDataset = [];
+      }
+
+      if (!rawDataset.length) {
+        document.getElementById('empty-notice').style.display = 'block';
+        document.getElementById('control-section').style.display = 'none';
+        document.getElementById('kpi-section').style.display = 'none';
+        document.getElementById('charts-main').style.display = 'none';
+        document.getElementById('charts-secondary').style.display = 'none';
+        return;
+      }
+
+      populateSelectors();
+      runFilterPipeline();
+    }
+
+    function populateSelectors() {
+      const locSelect = document.getElementById('filt-local');
+      const tmlSelect = document.getElementById('filt-tml');
+      const locSet = new Set(rawDataset.map(d => d.Localizacao).filter(Boolean));
+      const tmlSet = new Set(rawDataset.map(d => d.TinyML_Estado).filter(Boolean));
+
+      locSelect.innerHTML = '<option value="">Todas as Localidades</option>';
+      locSet.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.innerText = l;
+        locSelect.appendChild(opt);
+      });
+
+      tmlSelect.innerHTML = '<option value="">Todos</option>';
+      tmlSet.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.innerText = t;
+        tmlSelect.appendChild(opt);
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('filt-local').value = '';
+      document.getElementById('filt-gmin').value = '';
+      document.getElementById('filt-gmax').value = '';
+      document.getElementById('filt-iqamin').value = '';
+      document.getElementById('filt-iqamax').value = '';
+      document.getElementById('filt-adcmin').value = '';
+      document.getElementById('filt-adcmax').value = '';
+      document.getElementById('filt-tml').value = '';
+      runFilterPipeline();
+    }
+
+    function runFilterPipeline() {
+      const loc = document.getElementById('filt-local').value;
+      const gmin = parseFloat(document.getElementById('filt-gmin').value);
+      const gmax = parseFloat(document.getElementById('filt-gmax').value);
+      const iqamin = parseFloat(document.getElementById('filt-iqamin').value);
+      const iqamax = parseFloat(document.getElementById('filt-iqamax').value);
+      const adcmin = parseFloat(document.getElementById('filt-adcmin').value);
+      const adcmax = parseFloat(document.getElementById('filt-adcmax').value);
+      const tml = document.getElementById('filt-tml').value;
+
+      currentFiltered = rawDataset.filter(d => {
+        if (loc && d.Localizacao !== loc) return false;
+        if (tml && d.TinyML_Estado !== tml) return false;
+        if (!isNaN(gmin) && d.Gas_PPM_Comp < gmin) return false;
+        if (!isNaN(gmax) && d.Gas_PPM_Comp > gmax) return false;
+        if (!isNaN(iqamin) && d.IQA < iqamin) return false;
+        if (!isNaN(iqamax) && d.IQA > iqamax) return false;
+        if (!isNaN(adcmin) && d.MQ_ADC < adcmin) return false;
+        if (!isNaN(adcmax) && d.MQ_ADC > adcmax) return false;
+        return true;
+      });
+
+      liveIndex = currentFiltered.length - 1;
+      updateKPIs();
+      renderAllCharts();
+    }
+
+    function updateKPIs(activePoint) {
+      const n = currentFiltered.length;
+      if (!n) return;
+      const last = activePoint || currentFiltered[currentFiltered.length - 1];
+      const ppms = currentFiltered.map(d => d.Gas_PPM_Comp);
+      const avgPPM = (ppms.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const maxPPM = Math.max(...ppms).toFixed(1);
+      
+      const variance = ppms.reduce((acc, v) => acc + Math.pow(v - avgPPM, 2), 0) / n;
+      const stdPPM = Math.sqrt(variance).toFixed(1);
+
+      document.getElementById('kpi-gas-val').innerText = `${last.Gas_PPM_Comp} PPM`;
+      document.getElementById('kpi-gas-sub').innerText = `Média: ${avgPPM} | Desvio: ±${stdPPM}`;
+
+      document.getElementById('kpi-iqa-val').innerText = `${last.IQA} / 500`;
+      document.getElementById('kpi-iqa-sub').innerText = last.IQA <= 25 ? 'Status: BOA (Conama 491)' : (last.IQA <= 50 ? 'Status: MODERADA' : 'Status: ALERTA');
+
+      document.getElementById('kpi-adc-val').innerText = `${last.MQ_ADC} cts`;
+      document.getElementById('kpi-samples-val').innerText = n.toLocaleString('pt-BR');
+      document.getElementById('kpi-peak-val').innerText = `Pico Máx: ${maxPPM} PPM`;
+    }
+
+    function toggleLiveReplay() {
+      const btn = document.getElementById('btn-live-toggle');
+      const indicator = document.getElementById('live-indicator');
+      if (liveTimer) {
+        clearInterval(liveTimer);
+        liveTimer = null;
+        btn.classList.remove('active');
+        btn.innerText = '▶ Iniciar Simulação em Tempo Real (Live Replay)';
+        indicator.innerText = 'STATUS: ESTÁTICO';
+      } else {
+        btn.classList.add('active');
+        btn.innerText = '⏹ Parar Simulação Dinâmica';
+        indicator.innerText = 'STATUS: REPRODUZINDO AO VIVO (1 Hz)';
+        liveIndex = 0;
+        liveTimer = setInterval(() => {
+          if (liveIndex >= currentFiltered.length) liveIndex = 0;
+          const point = currentFiltered[liveIndex];
+          updateKPIs(point);
+          updateGauges(point);
+          liveIndex++;
+        }, 1000);
+      }
+    }
+
+    function updateGauges(point) {
+      if (!chartGauges) return;
+      chartGauges.setOption({
+        series: [
+          { data: [{ value: point.Gas_PPM_Comp, name: 'PPM Gás' }] },
+          { data: [{ value: point.IQA, name: 'IQA' }] }
+        ]
+      });
+    }
+
+    function renderAllCharts() {
+      if (!currentFiltered.length) return;
+      const isDark = !document.body.classList.contains('light-theme');
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      const times = currentFiltered.map(d => d.Data_Hora);
+      const ppms = currentFiltered.map(d => d.Gas_PPM_Comp);
+      const adcs = currentFiltered.map(d => d.MQ_ADC);
+
+      // 1. Linha Temporal com VisualMap Pieces
+      const domLine = document.getElementById('chart-gas-timeline');
+      if (domLine) {
+        if (chartTimeline) chartTimeline.dispose();
+        chartTimeline = echarts.init(domLine);
+        chartTimeline.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          visualMap: {
+            show: true, orient: 'horizontal', left: 'center', top: 0, textStyle: { color: textColor },
+            pieces: [
+              { lte: 400, color: '#10b981', label: 'Excelente (<400)' },
+              { gt: 400, lte: 450, color: '#06b6d4', label: 'Normal (400-450)' },
+              { gt: 450, lte: 480, color: '#f59e0b', label: 'Atenção (450-480)' },
+              { gt: 480, color: '#f43f5e', label: 'Alerta (>480)' }
+            ]
+          },
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: 'PPM', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            name: 'Gas PPM', type: 'line', smooth: true, data: ppms,
+            markPoint: {
+              data: [
+                { type: 'max', name: 'Pico Máximo' },
+                { type: 'min', name: 'Mínimo' }
+              ]
+            }
+          }]
+        });
+      }
+
+      // 2. Gauge Duplo
+      const domGauge = document.getElementById('chart-gas-gauges');
+      if (domGauge) {
+        if (chartGauges) chartGauges.dispose();
+        chartGauges = echarts.init(domGauge);
+        const last = currentFiltered[currentFiltered.length - 1];
+        chartGauges.setOption({
+          series: [
+            {
+              type: 'gauge', center: ['30%', '55%'], radius: '80%', min: 300, max: 600,
+              progress: { show: true, width: 10 },
+              axisLine: { lineStyle: { width: 10 } },
+              axisTick: { show: false },
+              splitLine: { length: 6, lineStyle: { width: 1, color: '#999' } },
+              axisLabel: { distance: 12, color: textColor, fontSize: 9 },
+              pointer: { itemStyle: { color: '#06b6d4' } },
+              title: { offsetCenter: ['0%', '70%'], fontSize: 12, color: textColor },
+              detail: { valueAnimation: true, offsetCenter: ['0%', '90%'], fontSize: 16, color: textColor, formatter: '{value} PPM' },
+              data: [{ value: last.Gas_PPM_Comp, name: 'PPM Gás' }]
+            },
+            {
+              type: 'gauge', center: ['72%', '55%'], radius: '80%', min: 0, max: 100,
+              progress: { show: true, width: 10 },
+              axisLine: { lineStyle: { width: 10 } },
+              axisTick: { show: false },
+              splitLine: { length: 6, lineStyle: { width: 1, color: '#999' } },
+              axisLabel: { distance: 12, color: textColor, fontSize: 9 },
+              pointer: { itemStyle: { color: '#10b981' } },
+              title: { offsetCenter: ['0%', '70%'], fontSize: 12, color: textColor },
+              detail: { valueAnimation: true, offsetCenter: ['0%', '90%'], fontSize: 16, color: textColor, formatter: '{value}' },
+              data: [{ value: last.IQA, name: 'IQA' }]
+            }
+          ]
+        });
+      }
+
+      // 3. Scatter ADC vs PPM
+      const domScatter = document.getElementById('chart-gas-scatter');
+      if (domScatter) {
+        if (chartScatter) chartScatter.dispose();
+        chartScatter = echarts.init(domScatter);
+        chartScatter.setOption({
+          tooltip: { formatter: p => `ADC: ${p.value[0]}<br>PPM: ${p.value[1]}` },
+          grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+          xAxis: { type: 'value', name: 'MQ-135 ADC', scale: true, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          yAxis: { type: 'value', name: 'PPM Comp', scale: true, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            type: 'scatter', symbolSize: 5,
+            data: currentFiltered.map(d => [d.MQ_ADC, d.Gas_PPM_Comp]),
+            itemStyle: { color: '#3b82f6' }
+          }]
+        });
+      }
+
+      // 4. Histograma
+      const domHist = document.getElementById('chart-gas-hist');
+      if (domHist) {
+        if (chartHist) chartHist.dispose();
+        chartHist = echarts.init(domHist);
+        const minP = Math.floor(Math.min(...ppms));
+        const maxP = Math.ceil(Math.max(...ppms));
+        const binsCount = 12;
+        const step = (maxP - minP) / binsCount;
+        const counts = new Array(binsCount).fill(0);
+        const binLabels = [];
+        for (let i = 0; i < binsCount; i++) {
+          binLabels.push(`${Math.round(minP + i * step)}`);
+        }
+        ppms.forEach(p => {
+          let idx = Math.min(Math.floor((p - minP) / step), binsCount - 1);
+          counts[idx]++;
+        });
+
+        chartHist.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: '3%', right: '3%', bottom: '10%', containLabel: true },
+          xAxis: { type: 'category', data: binLabels, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: 'Frequência', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            type: 'bar', data: counts, itemStyle: { color: '#06b6d4', borderRadius: [4, 4, 0, 0] }
+          }]
+        });
+      }
+    }
+
+    function handleLocalUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const lines = text.trim().split(/\r?\n/);
+        if (lines.length < 2) return alert('Arquivo inválido.');
+        const delimiter = lines[0].includes(';') ? ';' : ',';
+        const headers = lines[0].split(delimiter).map(h => h.trim());
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const vals = line.split(delimiter);
+          const row = {};
+          headers.forEach((h, idx) => {
+            let val = (vals[idx] || '').trim().replace(',', '.');
+            row[h] = (!isNaN(val) && val !== '') ? parseFloat(val) : (vals[idx] || '').trim();
+          });
+          data.push(row);
+        }
+        localStorage.setItem('atalaia_master_dataset', JSON.stringify(data));
+        location.reload();
+      };
+      reader.readAsText(file);
+    }
+
+    window.addEventListener('resize', () => {
+      chartTimeline && chartTimeline.resize();
+      chartGauges && chartGauges.resize();
+      chartScatter && chartScatter.resize();
+      chartHist && chartHist.resize();
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>

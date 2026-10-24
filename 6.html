@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 6: Estatística & Correlações</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --card-border: rgba(56, 189, 248, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+      --nav-bg: rgba(7, 11, 20, 0.96);
+      --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+      --input-bg: #1e293b;
+      --table-hover: rgba(56, 189, 248, 0.08);
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+      --table-hover: rgba(241, 245, 249, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1750px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .filter-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow);
+    }
+    .filter-grid { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .filter-input {
+      background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 7px 12px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+    .kpi-title { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .kpi-val { font-size: 26px; font-weight: 800; }
+    .kpi-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .table-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 18px; box-shadow: var(--shadow); overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; }
+    th { padding: 10px 14px; background: var(--input-bg); color: var(--text-muted); border-bottom: 2px solid var(--card-border); white-space: nowrap; }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
+    tr:hover { background: var(--table-hover); }
+
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column;
+    }
+    .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .chart-canvas { width: 100%; height: 430px; }
+
+    .empty-warning {
+      background: rgba(244, 63, 94, 0.12); border: 1px solid var(--rose); border-radius: 10px;
+      padding: 18px; text-align: center; color: var(--text-main); font-size: 14px;
+    }
+    .btn {
+      padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-cyan { background: var(--cyan); color: #000; }
+    .btn-outline { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">ESTATÍSTICA</span>
+      <div class="brand-title">Módulo 6 — Estatística Descritiva & Matriz de Correlação Bivariada</div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link active">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="empty-warning" id="empty-notice" style="display:none;">
+      Nenhuma base de dados encontrada em memória local. Importe seu CSV através do <a href="index.html" style="color:var(--cyan); font-weight:bold;">Hub Central</a> ou <a href="1.html" style="color:var(--cyan); font-weight:bold;">Módulo 1</a>.
+    </div>
+
+    <!-- Barra de Filtros Rigorosa -->
+    <section class="filter-card" id="filter-section">
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label>Localização / Estação:</label>
+          <select id="filt-local" class="filter-input" onchange="runStatisticalPipeline()">
+            <option value="">Todas as Localidades</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Temperatura (°C):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="filt-tmin" class="filter-input" style="width:75px;" placeholder="Min" oninput="runStatisticalPipeline()">
+            <input type="number" id="filt-tmax" class="filter-input" style="width:75px;" placeholder="Max" oninput="runStatisticalPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Umidade (%):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="filt-umin" class="filter-input" style="width:75px;" placeholder="Min" oninput="runStatisticalPipeline()">
+            <input type="number" id="filt-umax" class="filter-input" style="width:75px;" placeholder="Max" oninput="runStatisticalPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Gás (PPM):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="filt-gmin" class="filter-input" style="width:85px;" placeholder="Min" oninput="runStatisticalPipeline()">
+            <input type="number" id="filt-gmax" class="filter-input" style="width:85px;" placeholder="Max" oninput="runStatisticalPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Estado TinyML:</label>
+          <select id="filt-tml" class="filter-input" onchange="runStatisticalPipeline()">
+            <option value="">Todos os Estados</option>
+          </select>
+        </div>
+        <div class="filter-item" style="justify-content: flex-end;">
+          <button class="btn btn-outline" onclick="resetFilters()">Resetar Filtros</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs de Resumo Amostral -->
+    <section class="kpi-row" id="kpi-section">
+      <div class="kpi-card">
+        <div class="kpi-title">Amostras Analisadas (N)</div>
+        <div class="kpi-val" id="kpi-samples">0</div>
+        <div class="kpi-desc" id="kpi-samples-pct">100% da base ativa</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Variância Média Térmica (&sigma;²)</div>
+        <div class="kpi-val" id="kpi-var-temp">--</div>
+        <div class="kpi-desc">Grau de dispersão da temperatura</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Correlação Mais Forte (|r|)</div>
+        <div class="kpi-val" id="kpi-max-corr" style="color:var(--cyan);">--</div>
+        <div class="kpi-desc" id="kpi-max-corr-pair">Variáveis: --</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Localidades no Filtro</div>
+        <div class="kpi-val" id="kpi-locations" style="color:var(--green);">0</div>
+        <div class="kpi-desc" id="kpi-location-names">Identificadas no CSV</div>
+      </div>
+    </section>
+
+    <!-- Tabela 1: Quadro Paramétrico e Não-Paramétrico -->
+    <div class="table-card" id="table-parametric-card">
+      <h3 style="font-size: 16px; font-weight:700; margin-bottom: 12px;">1. Quadro Sintético de Estatística Descritiva (Paramétrica & Separatrizes)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Variável</th>
+            <th>N Válido</th>
+            <th>Média (&mu;)</th>
+            <th>Desvio Padrão (&sigma;)</th>
+            <th>Mínimo</th>
+            <th>Q1 (25%)</th>
+            <th>Mediana (Q2)</th>
+            <th>Q3 (75%)</th>
+            <th>Máximo</th>
+            <th>IQR</th>
+            <th>CV (%)</th>
+          </tr>
+        </thead>
+        <tbody id="stats-table-body">
+          <tr><td colspan="11" style="text-align:center; padding:20px; color:var(--text-muted);">Processando amostras...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabela 2: Diagnóstico de Assimetria, Curtose e Anomalias -->
+    <div class="table-card" id="table-distribution-card">
+      <h3 style="font-size: 16px; font-weight:700; margin-bottom: 12px;">2. Diagnóstico de Distribuição, Momentos Amostrais & Detecção de Outliers</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Variável</th>
+            <th>Assimetria (Skewness)</th>
+            <th>Curtose (Kurtosis)</th>
+            <th>Limite Inferior (Q1 - 1.5&times;IQR)</th>
+            <th>Limite Superior (Q3 + 1.5&times;IQR)</th>
+            <th>Outliers Inferiores (Qtd)</th>
+            <th>Outliers Superiores (Qtd)</th>
+            <th>Total Anomalias (%)</th>
+          </tr>
+        </thead>
+        <tbody id="distribution-table-body">
+          <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">Processando distribuição...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Gráficos -->
+    <section class="charts-grid" id="charts-section">
+      <!-- 1. Matriz de Calor de Pearson -->
+      <div class="chart-box">
+        <div class="chart-title">Matriz de Correlação de Pearson (r) Entre Todas as Variáveis Contínuas</div>
+        <div id="chart-correlation" class="chart-canvas"></div>
+      </div>
+
+      <!-- 2. Dispersão com Linha de Regressão Bivariada -->
+      <div class="chart-box">
+        <div class="chart-title">Dispersão e Reta de Regressão Linear: Temperatura (°C) vs. Humidade (%)</div>
+        <div id="chart-regression" class="chart-canvas"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+      renderCharts();
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let rawDataset = [];
+    let currentFiltered = [];
+    let chartCorr, chartReg;
+
+    const monitoredVariables = [
+      { name: 'Temperatura (°C)', key: 'Temperatura_C' },
+      { name: 'Humidade Relativa (%)', key: 'Umidade_Pct' },
+      { name: 'Gases Compensados (PPM)', key: 'Gas_PPM_Comp' },
+      { name: 'Índice de Qualidade do Ar (IQA)', key: 'IQA' },
+      { name: 'Sensação Térmica (°C)', key: 'Sensacao_C' },
+      { name: 'Ponto de Orvalho (°C)', key: 'Orvalho_C' },
+      { name: 'Taxa Variação dT/dt (°C/min)', key: 'dT_dt_C_min' },
+      { name: 'Sensor MQ (ADC)', key: 'MQ_ADC' }
+    ];
+
+    function init() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { rawDataset = JSON.parse(stored); } catch (e) { rawDataset = []; }
+      } else {
+        rawDataset = [];
+      }
+
+      if (!rawDataset.length) {
+        document.getElementById('empty-notice').style.display = 'block';
+        document.getElementById('filter-section').style.display = 'none';
+        document.getElementById('kpi-section').style.display = 'none';
+        document.getElementById('table-parametric-card').style.display = 'none';
+        document.getElementById('table-distribution-card').style.display = 'none';
+        document.getElementById('charts-section').style.display = 'none';
+        return;
+      }
+
+      populateFilterSelectors();
+      runStatisticalPipeline();
+    }
+
+    function populateFilterSelectors() {
+      const localSelect = document.getElementById('filt-local');
+      const tmlSelect = document.getElementById('filt-tml');
+      
+      const locais = new Set();
+      const estados = new Set();
+
+      rawDataset.forEach(d => {
+        if (d.Localizacao) locais.add(d.Localizacao);
+        if (d.TinyML_Estado) estados.add(d.TinyML_Estado);
+      });
+
+      localSelect.innerHTML = '<option value="">Todas as Localidades</option>';
+      locais.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc; opt.innerText = loc;
+        localSelect.appendChild(opt);
+      });
+
+      tmlSelect.innerHTML = '<option value="">Todos os Estados</option>';
+      estados.forEach(est => {
+        const opt = document.createElement('option');
+        opt.value = est; opt.innerText = est;
+        tmlSelect.appendChild(opt);
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('filt-local').value = '';
+      document.getElementById('filt-tmin').value = '';
+      document.getElementById('filt-tmax').value = '';
+      document.getElementById('filt-umin').value = '';
+      document.getElementById('filt-umax').value = '';
+      document.getElementById('filt-gmin').value = '';
+      document.getElementById('filt-gmax').value = '';
+      document.getElementById('filt-tml').value = '';
+      runStatisticalPipeline();
+    }
+
+    function runStatisticalPipeline() {
+      const loc = document.getElementById('filt-local').value;
+      const tmin = parseFloat(document.getElementById('filt-tmin').value);
+      const tmax = parseFloat(document.getElementById('filt-tmax').value);
+      const umin = parseFloat(document.getElementById('filt-umin').value);
+      const umax = parseFloat(document.getElementById('filt-umax').value);
+      const gmin = parseFloat(document.getElementById('filt-gmin').value);
+      const gmax = parseFloat(document.getElementById('filt-gmax').value);
+      const tml = document.getElementById('filt-tml').value;
+
+      currentFiltered = rawDataset.filter(d => {
+        if (loc && d.Localizacao !== loc) return false;
+        if (tml && d.TinyML_Estado !== tml) return false;
+        if (!isNaN(tmin) && d.Temperatura_C < tmin) return false;
+        if (!isNaN(tmax) && d.Temperatura_C > tmax) return false;
+        if (!isNaN(umin) && d.Umidade_Pct < umin) return false;
+        if (!isNaN(umax) && d.Umidade_Pct > umax) return false;
+        if (!isNaN(gmin) && d.Gas_PPM_Comp < gmin) return false;
+        if (!isNaN(gmax) && d.Gas_PPM_Comp > gmax) return false;
+        return true;
+      });
+
+      renderKPIs();
+      renderParametricTable();
+      renderDistributionTable();
+      renderCharts();
+    }
+
+    function computeStats(arr) {
+      if (!arr || !arr.length) return null;
+      const sorted = [...arr].sort((a,b) => a - b);
+      const n = sorted.length;
+      const min = sorted[0];
+      const max = sorted[n - 1];
+      const mean = sorted.reduce((acc, v) => acc + v, 0) / n;
+      const variance = sorted.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / n;
+      const std = Math.sqrt(variance);
+      const q1 = sorted[Math.floor(n * 0.25)];
+      const median = sorted[Math.floor(n * 0.5)];
+      const q3 = sorted[Math.floor(n * 0.75)];
+      const iqr = q3 - q1;
+      const cv = mean !== 0 ? (std / Math.abs(mean)) * 100 : 0;
+
+      // Momentos de ordem 3 e 4
+      const m3 = sorted.reduce((acc, v) => acc + Math.pow(v - mean, 3), 0) / n;
+      const m4 = sorted.reduce((acc, v) => acc + Math.pow(v - mean, 4), 0) / n;
+      const skewness = std !== 0 ? m3 / Math.pow(std, 3) : 0;
+      const kurtosis = std !== 0 ? (m4 / Math.pow(std, 4)) - 3 : 0;
+
+      // Anomalias (1.5 * IQR)
+      const lowerFence = q1 - 1.5 * iqr;
+      const upperFence = q3 + 1.5 * iqr;
+      const lowerOutliers = sorted.filter(v => v < lowerFence).length;
+      const upperOutliers = sorted.filter(v => v > upperFence).length;
+
+      return {
+        n, mean, std, variance, min, q1, median, q3, max, iqr, cv,
+        skewness, kurtosis, lowerFence, upperFence, lowerOutliers, upperOutliers
+      };
+    }
+
+    function renderKPIs() {
+      const n = currentFiltered.length;
+      document.getElementById('kpi-samples').innerText = n.toLocaleString('pt-BR');
+      const pct = rawDataset.length ? ((n / rawDataset.length) * 100).toFixed(1) : 0;
+      document.getElementById('kpi-samples-pct').innerText = `${pct}% do banco total carregado`;
+
+      const temps = currentFiltered.map(d => d.Temperatura_C).filter(v => !isNaN(v));
+      if (temps.length) {
+        const s = computeStats(temps);
+        document.getElementById('kpi-var-temp').innerText = s.variance.toFixed(4);
+      }
+
+      // Contagem de locais únicos
+      const locSet = new Set(currentFiltered.map(d => d.Localizacao).filter(Boolean));
+      document.getElementById('kpi-locations').innerText = locSet.size;
+      document.getElementById('kpi-location-names').innerText = Array.from(locSet).join(', ') || 'Nenhum';
+    }
+
+    function renderParametricTable() {
+      const tbody = document.getElementById('stats-table-body');
+      tbody.innerHTML = '';
+
+      if (!currentFiltered.length) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:20px;">Nenhum dado encontrado para os filtros selecionados.</td></tr>';
+        return;
+      }
+
+      monitoredVariables.forEach(v => {
+        const vals = currentFiltered.map(d => d[v.key]).filter(x => typeof x === 'number' && !isNaN(x));
+        const s = computeStats(vals);
+        if (!s) return;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${v.name}</strong></td>
+          <td>${s.n}</td>
+          <td>${s.mean.toFixed(2)}</td>
+          <td>&plusmn;${s.std.toFixed(2)}</td>
+          <td>${s.min.toFixed(1)}</td>
+          <td>${s.q1.toFixed(1)}</td>
+          <td>${s.median.toFixed(1)}</td>
+          <td>${s.q3.toFixed(1)}</td>
+          <td>${s.max.toFixed(1)}</td>
+          <td>${s.iqr.toFixed(2)}</td>
+          <td>${s.cv.toFixed(2)}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDistributionTable() {
+      const tbody = document.getElementById('distribution-table-body');
+      tbody.innerHTML = '';
+
+      if (!currentFiltered.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Nenhum dado filtrado.</td></tr>';
+        return;
+      }
+
+      monitoredVariables.forEach(v => {
+        const vals = currentFiltered.map(d => d[v.key]).filter(x => typeof x === 'number' && !isNaN(x));
+        const s = computeStats(vals);
+        if (!s) return;
+
+        const totalOutliers = s.lowerOutliers + s.upperOutliers;
+        const outlierPct = ((totalOutliers / s.n) * 100).toFixed(2);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${v.name}</strong></td>
+          <td>${s.skewness.toFixed(3)}</td>
+          <td>${s.kurtosis.toFixed(3)}</td>
+          <td>${s.lowerFence.toFixed(2)}</td>
+          <td>${s.upperFence.toFixed(2)}</td>
+          <td style="color:${s.lowerOutliers > 0 ? 'var(--amber)' : 'inherit'}">${s.lowerOutliers}</td>
+          <td style="color:${s.upperOutliers > 0 ? 'var(--rose)' : 'inherit'}">${s.upperOutliers}</td>
+          <td><strong>${outlierPct}%</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function pearson(x, y) {
+      const n = x.length;
+      if (n < 2) return 0;
+      const xm = x.reduce((a,b)=>a+b,0)/n;
+      const ym = y.reduce((a,b)=>a+b,0)/n;
+      let num = 0, denX = 0, denY = 0;
+      for (let i = 0; i < n; i++) {
+        const dx = x[i] - xm;
+        const dy = y[i] - ym;
+        num += dx * dy;
+        denX += dx * dx;
+        denY += dy * dy;
+      }
+      const den = Math.sqrt(denX * denY);
+      return den === 0 ? 0 : num / den;
+    }
+
+    function renderCharts() {
+      if (!currentFiltered.length) return;
+      const isDark = !document.body.classList.contains('light-theme');
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      const varKeys = ['Temperatura_C', 'Umidade_Pct', 'Gas_PPM_Comp', 'IQA', 'Sensacao_C', 'Orvalho_C'];
+      const labels = ['Temp', 'Umid', 'Gás', 'IQA', 'Sensação', 'Orvalho'];
+
+      let maxCorrValue = 0;
+      let maxCorrPair = '--';
+
+      const corrMatrix = [];
+      for (let i = 0; i < varKeys.length; i++) {
+        for (let j = 0; j < varKeys.length; j++) {
+          const arrX = currentFiltered.map(d => d[varKeys[i]]);
+          const arrY = currentFiltered.map(d => d[varKeys[j]]);
+          const r = parseFloat(pearson(arrX, arrY).toFixed(2));
+          corrMatrix.push([i, j, r]);
+
+          if (i !== j && Math.abs(r) > maxCorrValue) {
+            maxCorrValue = Math.abs(r);
+            maxCorrPair = `${labels[i]} &times; ${labels[j]} (r = ${r})`;
+          }
+        }
+      }
+
+      document.getElementById('kpi-max-corr').innerText = maxCorrValue.toFixed(2);
+      document.getElementById('kpi-max-corr-pair').innerHTML = maxCorrPair;
+
+      // 1. Matriz de Calor
+      const domCorr = document.getElementById('chart-correlation');
+      if (domCorr) {
+        if (chartCorr) chartCorr.dispose();
+        chartCorr = echarts.init(domCorr);
+        chartCorr.setOption({
+          tooltip: { position: 'top', formatter: p => `${labels[p.data[0]]} & ${labels[p.data[1]]}: Pearson r = ${p.data[2]}` },
+          grid: { top: '8%', bottom: '18%', left: '12%', right: '6%' },
+          xAxis: { type: 'category', data: labels, axisLabel: { color: textColor } },
+          yAxis: { type: 'category', data: labels, axisLabel: { color: textColor } },
+          visualMap: {
+            min: -1, max: 1, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%',
+            inRange: { color: ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e'] },
+            textStyle: { color: textColor }
+          },
+          series: [{
+            type: 'heatmap',
+            data: corrMatrix,
+            label: { show: true, color: '#fff', fontSize: 11 }
+          }]
+        });
+      }
+
+      // 2. Regressão Bivariada: Temperatura vs Humidade
+      const domReg = document.getElementById('chart-regression');
+      if (domReg) {
+        if (chartReg) chartReg.dispose();
+        chartReg = echarts.init(domReg);
+
+        const xVals = currentFiltered.map(d => d.Temperatura_C);
+        const yVals = currentFiltered.map(d => d.Umidade_Pct);
+        const scatterPoints = xVals.map((x, i) => [x, yVals[i]]);
+
+        // Regressão simples
+        const n = xVals.length;
+        const xm = xVals.reduce((a,b)=>a+b,0)/n;
+        const ym = yVals.reduce((a,b)=>a+b,0)/n;
+        let num = 0, den = 0;
+        for (let i = 0; i < n; i++) {
+          num += (xVals[i] - xm) * (yVals[i] - ym);
+          den += Math.pow(xVals[i] - xm, 2);
+        }
+        const slope = den !== 0 ? num / den : 0;
+        const intercept = ym - slope * xm;
+
+        const xMin = Math.min(...xVals);
+        const xMax = Math.max(...xVals);
+        const regLine = [
+          [xMin, parseFloat((slope * xMin + intercept).toFixed(2))],
+          [xMax, parseFloat((slope * xMax + intercept).toFixed(2))]
+        ];
+
+        chartReg.setOption({
+          tooltip: { formatter: p => `Temp: ${p.value[0]} °C<br>Umid: ${p.value[1]} %` },
+          grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+          xAxis: { type: 'value', name: 'Temp (°C)', scale: true, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          yAxis: { type: 'value', name: 'Umidade (%)', scale: true, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [
+            { type: 'scatter', symbolSize: 5, data: scatterPoints, itemStyle: { color: '#06b6d4' } },
+            { type: 'line', data: regLine, itemStyle: { color: '#f43f5e' }, lineStyle: { width: 3, type: 'dashed' }, showSymbol: false }
+          ]
+        });
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      chartCorr && chartCorr.resize();
+      chartReg && chartReg.resize();
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>

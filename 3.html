@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 3: Avaliação Térmica & Cinética</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #050811;
+      --card-bg: rgba(13, 20, 36, 0.88);
+      --card-border: rgba(56, 189, 248, 0.28);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.4);
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.4);
+      --nav-bg: rgba(5, 8, 17, 0.96);
+      --shadow: 0 10px 35px -10px rgba(0, 0, 0, 0.7);
+      --input-bg: #131d31;
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+      --cyan-glow: transparent;
+      --rose-glow: transparent;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.15); border-color: rgba(244, 63, 94, 0.25); }
+      50% { box-shadow: 0 0 25px rgba(244, 63, 94, 0.35); border-color: rgba(244, 63, 94, 0.55); }
+    }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--amber), var(--rose));
+      color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;
+    }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1750px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .control-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px;
+      display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow);
+    }
+    .top-action-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-live { background: linear-gradient(135deg, var(--rose), var(--amber)); color: #fff; box-shadow: 0 0 15px var(--rose-glow); }
+    .btn-live.active { background: linear-gradient(135deg, var(--cyan), var(--blue)); box-shadow: 0 0 20px var(--cyan-glow); }
+    .btn-outline { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); }
+
+    .filters-grid { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .filter-input {
+      background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 7px 12px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+    .kpi-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); position: relative; overflow: hidden; animation: pulseGlow 4s infinite ease-in-out;
+    }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--rose); }
+    .kpi-title { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .kpi-val { font-size: 28px; font-weight: 800; }
+    .kpi-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .charts-grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .charts-grid-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) {
+      .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
+    }
+
+    .chart-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative;
+    }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .chart-title { font-size: 15px; font-weight: 700; }
+    .chart-canvas { width: 100%; height: 380px; }
+
+    .hud-ticker {
+      font-family: monospace; font-size: 12px; color: var(--rose); padding: 4px 10px;
+      background: rgba(244, 63, 94, 0.1); border-radius: 4px; border: 1px solid var(--card-border);
+    }
+    .empty-warning {
+      background: rgba(244, 63, 94, 0.12); border: 1px solid var(--rose); border-radius: 10px;
+      padding: 18px; text-align: center; color: var(--text-main); font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">CINÉTICA TÉRMICA</span>
+      <div>
+        <div class="brand-title">Módulo 3 — Avaliação Térmica, Sensação Real & Gradientes (dT/dt)</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link active">3. Térmica</a>
+      <a href="4.html" class="nav-link">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="empty-warning" id="empty-notice" style="display:none;">
+      Nenhum registro encontrado. Importe o arquivo CSV através do <a href="index.html" style="color:var(--cyan); font-weight:bold;">Hub Central</a>.
+    </div>
+
+    <!-- Painel de Filtros e Modo Live Replay -->
+    <section class="control-card" id="control-section">
+      <div class="top-action-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button class="btn btn-live" id="btn-live-toggle" onclick="toggleLiveReplay()">
+            ▶ Iniciar Simulação Térmica em Tempo Real
+          </button>
+          <span class="hud-ticker" id="live-indicator">STATUS: ESTÁTICO</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn btn-outline" onclick="resetFilters()">Resetar Filtros</button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label>Localização / Estação:</label>
+          <select id="filt-local" class="filter-input" onchange="runFilterPipeline()">
+            <option value="">Todas as Localidades</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Temperatura (°C):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" step="0.1" id="filt-tmin" class="filter-input" style="width:75px;" placeholder="Min" oninput="runFilterPipeline()">
+            <input type="number" step="0.1" id="filt-tmax" class="filter-input" style="width:75px;" placeholder="Max" oninput="runFilterPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Sensação Térmica (°C):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" step="0.1" id="filt-smin" class="filter-input" style="width:75px;" placeholder="Min" oninput="runFilterPipeline()">
+            <input type="number" step="0.1" id="filt-smax" class="filter-input" style="width:75px;" placeholder="Max" oninput="runFilterPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Corte Mínimo |dT/dt| (°C/min):</label>
+          <input type="number" step="0.05" id="filt-dtcut" class="filter-input" style="width:90px;" value="0.0" oninput="runFilterPipeline()">
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs Dinâmicos de Temperatura -->
+    <section class="kpi-row" id="kpi-section">
+      <div class="kpi-card" style="--rose: var(--cyan);">
+        <div class="kpi-title">Temperatura Bulbo Seco</div>
+        <div class="kpi-val" id="kpi-temp-val">--.- °C</div>
+        <div class="kpi-desc" id="kpi-temp-sub">Média: --.- | Min: --.-</div>
+      </div>
+      <div class="kpi-card" style="--rose: var(--rose);">
+        <div class="kpi-title">Sensação Térmica (Heat Index)</div>
+        <div class="kpi-val" id="kpi-heat-val">--.- °C</div>
+        <div class="kpi-desc" id="kpi-heat-sub">Pico máx: --.- °C</div>
+      </div>
+      <div class="kpi-card" style="--rose: var(--amber);">
+        <div class="kpi-title">Gradiente dT/dt Médio</div>
+        <div class="kpi-val" id="kpi-dtdt-val">--.- °C/min</div>
+        <div class="kpi-desc">Velocidade de transferência térmica</div>
+      </div>
+      <div class="kpi-card" style="--rose: var(--green);">
+        <div class="kpi-title">Sobrecarga Térmica (ΔT)</div>
+        <div class="kpi-val" id="kpi-delta-val">+--.- °C</div>
+        <div class="kpi-desc">Excesso aparente causado por umidade</div>
+      </div>
+    </section>
+
+    <!-- Gráficos Principais -->
+    <section class="charts-grid-main" id="charts-main">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Banda de Confiança: Temperatura Medida vs. Sensação Térmica Aparente</div>
+          <span class="hud-ticker">HEAT BAND</span>
+        </div>
+        <div id="chart-temp-band" class="chart-canvas"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Ciclo Térmico em Coordenadas Polares</div>
+          <span class="hud-ticker">POLAR DEGREE</span>
+        </div>
+        <div id="chart-temp-polar" class="chart-canvas"></div>
+      </div>
+    </section>
+
+    <!-- Gráficos Secundários -->
+    <section class="charts-grid-secondary" id="charts-secondary">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Taxa Cinética Temporal (dT/dt) com Alertas de Choque Térmico</div>
+          <span class="hud-ticker">GRADIENT LIMITS</span>
+        </div>
+        <div id="chart-temp-dtdt" class="chart-canvas"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Patamares de Estabilidade Térmica (Step Line)</div>
+          <span class="hud-ticker">STEP LINE</span>
+        </div>
+        <div id="chart-temp-step" class="chart-canvas"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+      renderAllCharts();
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let rawDataset = [];
+    let currentFiltered = [];
+    let chartBand, chartPolar, chartDt, chartStep;
+    let liveTimer = null;
+    let liveIndex = 0;
+
+    function init() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { rawDataset = JSON.parse(stored); } catch (e) { rawDataset = []; }
+      } else {
+        rawDataset = [];
+      }
+
+      if (!rawDataset.length) {
+        document.getElementById('empty-notice').style.display = 'block';
+        document.getElementById('control-section').style.display = 'none';
+        document.getElementById('kpi-section').style.display = 'none';
+        document.getElementById('charts-main').style.display = 'none';
+        document.getElementById('charts-secondary').style.display = 'none';
+        return;
+      }
+
+      populateSelectors();
+      runFilterPipeline();
+    }
+
+    function populateSelectors() {
+      const locSelect = document.getElementById('filt-local');
+      const locSet = new Set(rawDataset.map(d => d.Localizacao).filter(Boolean));
+      locSelect.innerHTML = '<option value="">Todas as Localidades</option>';
+      locSet.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.innerText = l;
+        locSelect.appendChild(opt);
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('filt-local').value = '';
+      document.getElementById('filt-tmin').value = '';
+      document.getElementById('filt-tmax').value = '';
+      document.getElementById('filt-smin').value = '';
+      document.getElementById('filt-smax').value = '';
+      document.getElementById('filt-dtcut').value = '0.0';
+      runFilterPipeline();
+    }
+
+    function runFilterPipeline() {
+      const loc = document.getElementById('filt-local').value;
+      const tmin = parseFloat(document.getElementById('filt-tmin').value);
+      const tmax = parseFloat(document.getElementById('filt-tmax').value);
+      const smin = parseFloat(document.getElementById('filt-smin').value);
+      const smax = parseFloat(document.getElementById('filt-smax').value);
+      const dtcut = parseFloat(document.getElementById('filt-dtcut').value) || 0;
+
+      currentFiltered = rawDataset.filter(d => {
+        if (loc && d.Localizacao !== loc) return false;
+        if (!isNaN(tmin) && d.Temperatura_C < tmin) return false;
+        if (!isNaN(tmax) && d.Temperatura_C > tmax) return false;
+        if (!isNaN(smin) && d.Sensacao_C < smin) return false;
+        if (!isNaN(smax) && d.Sensacao_C > smax) return false;
+        if (Math.abs(d.dT_dt_C_min) < dtcut) return false;
+        return true;
+      });
+
+      liveIndex = currentFiltered.length - 1;
+      updateKPIs();
+      renderAllCharts();
+    }
+
+    function updateKPIs(point) {
+      const n = currentFiltered.length;
+      if (!n) return;
+      const last = point || currentFiltered[currentFiltered.length - 1];
+      const temps = currentFiltered.map(d => d.Temperatura_C);
+      const heats = currentFiltered.map(d => d.Sensacao_C);
+      const dts = currentFiltered.map(d => d.dT_dt_C_min);
+
+      const avgT = (temps.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const minT = Math.min(...temps).toFixed(1);
+      const maxH = Math.max(...heats).toFixed(1);
+      const avgDt = (dts.reduce((a,b)=>a+b,0)/n).toFixed(3);
+      const delta = (last.Sensacao_C - last.Temperatura_C).toFixed(1);
+
+      document.getElementById('kpi-temp-val').innerText = `${last.Temperatura_C} °C`;
+      document.getElementById('kpi-temp-sub').innerText = `Média: ${avgT} | Min: ${minT}`;
+
+      document.getElementById('kpi-heat-val').innerText = `${last.Sensacao_C} °C`;
+      document.getElementById('kpi-heat-sub').innerText = `Pico máximo: ${maxH} °C`;
+
+      document.getElementById('kpi-dtdt-val').innerText = `${last.dT_dt_C_min} °C/min`;
+      document.getElementById('kpi-delta-val').innerText = `+${delta} °C`;
+    }
+
+    function toggleLiveReplay() {
+      const btn = document.getElementById('btn-live-toggle');
+      const indicator = document.getElementById('live-indicator');
+      if (liveTimer) {
+        clearInterval(liveTimer);
+        liveTimer = null;
+        btn.classList.remove('active');
+        btn.innerText = '▶ Iniciar Simulação Térmica em Tempo Real';
+        indicator.innerText = 'STATUS: ESTÁTICO';
+      } else {
+        btn.classList.add('active');
+        btn.innerText = '⏹ Parar Simulação Térmica';
+        indicator.innerText = 'STATUS: REPRODUZINDO DINAMICAMENTE (1 Hz)';
+        liveIndex = 0;
+        liveTimer = setInterval(() => {
+          if (liveIndex >= currentFiltered.length) liveIndex = 0;
+          const p = currentFiltered[liveIndex];
+          updateKPIs(p);
+          liveIndex++;
+        }, 1000);
+      }
+    }
+
+    function renderAllCharts() {
+      if (!currentFiltered.length) return;
+      const isDark = !document.body.classList.contains('light-theme');
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      const times = currentFiltered.map(d => d.Data_Hora);
+      const temps = currentFiltered.map(d => d.Temperatura_C);
+      const heats = currentFiltered.map(d => d.Sensacao_C);
+      const dts = currentFiltered.map(d => d.dT_dt_C_min);
+
+      // 1. Banda de Confiança Térmica
+      const domBand = document.getElementById('chart-temp-band');
+      if (domBand) {
+        if (chartBand) chartBand.dispose();
+        chartBand = echarts.init(domBand);
+        chartBand.setOption({
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['Sensação Térmica (Heat Index)', 'Temperatura Medida'], textStyle: { color: textColor } },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: '°C', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [
+            {
+              name: 'Sensação Térmica (Heat Index)', type: 'line', smooth: true, data: heats,
+              itemStyle: { color: '#f43f5e' },
+              areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: 'rgba(244, 63, 94, 0.45)' },
+                  { offset: 1, color: 'rgba(244, 63, 94, 0.05)' }
+                ])
+              }
+            },
+            {
+              name: 'Temperatura Medida', type: 'line', smooth: true, data: temps,
+              itemStyle: { color: '#06b6d4' }
+            }
+          ]
+        });
+      }
+
+      // 2. Coordenadas Polares
+      const domPolar = document.getElementById('chart-temp-polar');
+      if (domPolar) {
+        if (chartPolar) chartPolar.dispose();
+        chartPolar = echarts.init(domPolar);
+        const polarData = currentFiltered.map((d, i) => [d.Temperatura_C, (i * 360 / currentFiltered.length)]);
+        chartPolar.setOption({
+          polar: {},
+          tooltip: { trigger: 'axis' },
+          angleAxis: { type: 'value', startAngle: 0, axisLabel: { color: textColor } },
+          radiusAxis: { min: 30, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            coordinateSystem: 'polar',
+            name: 'Ciclo Térmico',
+            type: 'line',
+            data: polarData,
+            itemStyle: { color: '#f59e0b' }
+          }]
+        });
+      }
+
+      // 3. Taxa dT/dt com Marklines
+      const domDt = document.getElementById('chart-temp-dtdt');
+      if (domDt) {
+        if (chartDt) chartDt.dispose();
+        chartDt = echarts.init(domDt);
+        chartDt.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: '°C/min', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            name: 'dT/dt', type: 'line', data: dts,
+            itemStyle: { color: '#f59e0b' },
+            markLine: {
+              data: [
+                { yAxis: 0.15, name: 'Aquecimento Acelerado', lineStyle: { color: '#f43f5e', type: 'dashed' } },
+                { yAxis: -0.15, name: 'Resfriamento Acelerado', lineStyle: { color: '#06b6d4', type: 'dashed' } }
+              ]
+            }
+          }]
+        });
+      }
+
+      // 4. Step Line
+      const domStep = document.getElementById('chart-temp-step');
+      if (domStep) {
+        if (chartStep) chartStep.dispose();
+        chartStep = echarts.init(domStep);
+        chartStep.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: '°C', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            name: 'Temperatura em Degrau', type: 'line', step: 'middle', data: temps,
+            itemStyle: { color: '#10b981' }
+          }]
+        });
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      chartBand && chartBand.resize();
+      chartPolar && chartPolar.resize();
+      chartDt && chartDt.resize();
+      chartStep && chartStep.resize();
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>

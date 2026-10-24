@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATALAIA 3 — Módulo 4: Umidade & Ponto de Orvalho</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #050811;
+      --card-bg: rgba(13, 20, 36, 0.88);
+      --card-border: rgba(56, 189, 248, 0.28);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.4);
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --nav-bg: rgba(5, 8, 17, 0.96);
+      --shadow: 0 10px 35px -10px rgba(0, 0, 0, 0.7);
+      --input-bg: #131d31;
+    }
+    body.light-theme {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(203, 213, 225, 0.85);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      --input-bg: #ffffff;
+      --cyan-glow: transparent;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.15); border-color: rgba(56, 189, 248, 0.25); }
+      50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.35); border-color: rgba(56, 189, 248, 0.55); }
+    }
+
+    header {
+      position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+      background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;
+    }
+    .brand-title { font-size: 17px; font-weight: 700; }
+
+    nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { color: var(--text-main); background: rgba(56, 189, 248, 0.12); border-color: var(--card-border); }
+    .theme-btn { background: none; border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    main { padding: 24px; max-width: 1750px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .control-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px;
+      display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow);
+    }
+    .top-action-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+      display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-live { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #fff; box-shadow: 0 0 15px var(--cyan-glow); }
+    .btn-live.active { background: linear-gradient(135deg, var(--rose), var(--amber)); }
+    .btn-outline { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); }
+
+    .filters-grid { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .filter-input {
+      background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main);
+      padding: 7px 12px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+    .kpi-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px;
+      box-shadow: var(--shadow); position: relative; overflow: hidden; animation: pulseGlow 4s infinite ease-in-out;
+    }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan); }
+    .kpi-title { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .kpi-val { font-size: 28px; font-weight: 800; }
+    .kpi-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .charts-grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .charts-grid-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) {
+      .charts-grid-main, .charts-grid-secondary { grid-template-columns: 1fr; }
+    }
+
+    .chart-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px;
+      box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative;
+    }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .chart-title { font-size: 15px; font-weight: 700; }
+    .chart-canvas { width: 100%; height: 380px; }
+
+    .hud-ticker {
+      font-family: monospace; font-size: 12px; color: var(--cyan); padding: 4px 10px;
+      background: rgba(6, 182, 212, 0.1); border-radius: 4px; border: 1px solid var(--card-border);
+    }
+    .empty-warning {
+      background: rgba(244, 63, 94, 0.12); border: 1px solid var(--rose); border-radius: 10px;
+      padding: 18px; text-align: center; color: var(--text-main); font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">CLIMA & CONDENSAÇÃO</span>
+      <div>
+        <div class="brand-title">Módulo 4 — Umidade Relativa, Ponto de Orvalho & Telemetria Climática</div>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-link">Hub Central</a>
+      <a href="1.html" class="nav-link">1. Gestão CRUD</a>
+      <a href="2.html" class="nav-link">2. Gases & IQA</a>
+      <a href="3.html" class="nav-link">3. Térmica</a>
+      <a href="4.html" class="nav-link active">4. Umidade & Clima</a>
+      <a href="5.html" class="nav-link">5. Derivados</a>
+      <a href="6.html" class="nav-link">6. Estatística</a>
+      <a href="7.html" class="nav-link">7. Glossário</a>
+      <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="empty-warning" id="empty-notice" style="display:none;">
+      Nenhum dado importado. Por favor, adicione seu CSV pelo <a href="index.html" style="color:var(--cyan); font-weight:bold;">Hub Central</a>.
+    </div>
+
+    <!-- Painel de Filtros e Modo Live Replay -->
+    <section class="control-card" id="control-section">
+      <div class="top-action-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button class="btn btn-live" id="btn-live-toggle" onclick="toggleLiveReplay()">
+            ▶ Iniciar Simulação Climática em Tempo Real
+          </button>
+          <span class="hud-ticker" id="live-indicator">STATUS: ESTÁTICO</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn btn-outline" onclick="resetFilters()">Resetar Filtros</button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="filter-item">
+          <label>Localização / Estação:</label>
+          <select id="filt-local" class="filter-input" onchange="runFilterPipeline()">
+            <option value="">Todas as Localidades</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Faixa Umidade Relativa (%):</label>
+          <div style="display:flex; gap:4px;">
+            <input type="number" step="0.5" id="filt-umin" class="filter-input" style="width:75px;" placeholder="Min" oninput="runFilterPipeline()">
+            <input type="number" step="0.5" id="filt-umax" class="filter-input" style="width:75px;" placeholder="Max" oninput="runFilterPipeline()">
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Margem Mínima Orvalho (T - Dew):</label>
+          <input type="number" step="0.2" id="filt-margin" class="filter-input" style="width:85px;" placeholder="Min" oninput="runFilterPipeline()">
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs Dinâmicos de Umidade e Orvalho -->
+    <section class="kpi-row" id="kpi-section">
+      <div class="kpi-card" style="--cyan: var(--cyan);">
+        <div class="kpi-title">Umidade Relativa Atual</div>
+        <div class="kpi-val" id="kpi-humid-val">--.- %</div>
+        <div class="kpi-desc" id="kpi-humid-sub">Média: --.- | Min: --.-</div>
+      </div>
+      <div class="kpi-card" style="--cyan: var(--blue);">
+        <div class="kpi-title">Ponto de Orvalho (Magnus)</div>
+        <div class="kpi-val" id="kpi-dew-val">--.- °C</div>
+        <div class="kpi-desc" id="kpi-dew-sub">Temperatura de saturação</div>
+      </div>
+      <div class="kpi-card" style="--cyan: var(--green);">
+        <div class="kpi-title">Margem de Condensação (ΔT)</div>
+        <div class="kpi-val" id="kpi-margin-val">--.- °C</div>
+        <div class="kpi-desc">Distância para névoa / ponto crítico</div>
+      </div>
+      <div class="kpi-card" style="--cyan: var(--amber);">
+        <div class="kpi-title">Leituras de Chuva & Fogo</div>
+        <div class="kpi-val" id="kpi-events-val">0 / 0</div>
+        <div class="kpi-desc">Eventos de Precipitação / Fogo detectados</div>
+      </div>
+    </section>
+
+    <!-- Gráficos Principais -->
+    <section class="charts-grid-main" id="charts-main">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Série Temporal de Umidade com Área em Gradiente Fluido</div>
+          <span class="hud-ticker">HUMIDITY CURVE</span>
+        </div>
+        <div id="chart-humid-timeline" class="chart-canvas"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Curva de Condensação: Bulbo Seco vs. Ponto de Orvalho</div>
+          <span class="hud-ticker">MAGNUS-TETENS</span>
+        </div>
+        <div id="chart-dew-curve" class="chart-canvas"></div>
+      </div>
+    </section>
+
+    <!-- Gráficos Secundários -->
+    <section class="charts-grid-secondary" id="charts-secondary">
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Sensor Analógico de Precipitação (Chuva ADC)</div>
+          <span class="hud-ticker">12-BIT RESISTIVE</span>
+        </div>
+        <div id="chart-rain-adc" class="chart-canvas"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <div class="chart-title">Dispersão: Umidade Relativa (%) vs. Margem de Condensação (°C)</div>
+          <span class="hud-ticker">PSICROMETRIA</span>
+        </div>
+        <div id="chart-scatter-margin" class="chart-canvas"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('atalaia_theme', isLight ? 'light' : 'dark');
+      renderAllCharts();
+    }
+    if ((localStorage.getItem('atalaia_theme') || 'dark') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    let rawDataset = [];
+    let currentFiltered = [];
+    let chartHumid, chartDew, chartRain, chartMargin;
+    let liveTimer = null;
+    let liveIndex = 0;
+
+    function init() {
+      const stored = localStorage.getItem('atalaia_master_dataset');
+      if (stored) {
+        try { rawDataset = JSON.parse(stored); } catch (e) { rawDataset = []; }
+      } else {
+        rawDataset = [];
+      }
+
+      if (!rawDataset.length) {
+        document.getElementById('empty-notice').style.display = 'block';
+        document.getElementById('control-section').style.display = 'none';
+        document.getElementById('kpi-section').style.display = 'none';
+        document.getElementById('charts-main').style.display = 'none';
+        document.getElementById('charts-secondary').style.display = 'none';
+        return;
+      }
+
+      populateSelectors();
+      runFilterPipeline();
+    }
+
+    function populateSelectors() {
+      const locSelect = document.getElementById('filt-local');
+      const locSet = new Set(rawDataset.map(d => d.Localizacao).filter(Boolean));
+      locSelect.innerHTML = '<option value="">Todas as Localidades</option>';
+      locSet.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.innerText = l;
+        locSelect.appendChild(opt);
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('filt-local').value = '';
+      document.getElementById('filt-umin').value = '';
+      document.getElementById('filt-umax').value = '';
+      document.getElementById('filt-margin').value = '';
+      runFilterPipeline();
+    }
+
+    function runFilterPipeline() {
+      const loc = document.getElementById('filt-local').value;
+      const umin = parseFloat(document.getElementById('filt-umin').value);
+      const umax = parseFloat(document.getElementById('filt-umax').value);
+      const marginMin = parseFloat(document.getElementById('filt-margin').value);
+
+      currentFiltered = rawDataset.filter(d => {
+        if (loc && d.Localizacao !== loc) return false;
+        if (!isNaN(umin) && d.Umidade_Pct < umin) return false;
+        if (!isNaN(umax) && d.Umidade_Pct > umax) return false;
+        const m = d.Temperatura_C - d.Orvalho_C;
+        if (!isNaN(marginMin) && m < marginMin) return false;
+        return true;
+      });
+
+      liveIndex = currentFiltered.length - 1;
+      updateKPIs();
+      renderAllCharts();
+    }
+
+    function updateKPIs(point) {
+      const n = currentFiltered.length;
+      if (!n) return;
+      const last = point || currentFiltered[currentFiltered.length - 1];
+      const umids = currentFiltered.map(d => d.Umidade_Pct);
+      const avgU = (umids.reduce((a,b)=>a+b,0)/n).toFixed(1);
+      const minU = Math.min(...umids).toFixed(1);
+
+      const margin = (last.Temperatura_C - last.Orvalho_C).toFixed(1);
+      const rainDets = currentFiltered.filter(d => d.Chuva_Det === 1).length;
+      const fireDets = currentFiltered.filter(d => d.Fogo_Det === 1).length;
+
+      document.getElementById('kpi-humid-val').innerText = `${last.Umidade_Pct} %`;
+      document.getElementById('kpi-humid-sub').innerText = `Média: ${avgU} | Min: ${minU}`;
+
+      document.getElementById('kpi-dew-val').innerText = `${last.Orvalho_C} °C`;
+      document.getElementById('kpi-margin-val').innerText = `${margin} °C`;
+      document.getElementById('kpi-events-val').innerText = `${rainDets} / ${fireDets}`;
+    }
+
+    function toggleLiveReplay() {
+      const btn = document.getElementById('btn-live-toggle');
+      const indicator = document.getElementById('live-indicator');
+      if (liveTimer) {
+        clearInterval(liveTimer);
+        liveTimer = null;
+        btn.classList.remove('active');
+        btn.innerText = '▶ Iniciar Simulação Climática em Tempo Real';
+        indicator.innerText = 'STATUS: ESTÁTICO';
+      } else {
+        btn.classList.add('active');
+        btn.innerText = '⏹ Parar Simulação Climática';
+        indicator.innerText = 'STATUS: REPRODUZINDO DINAMICAMENTE (1 Hz)';
+        liveIndex = 0;
+        liveTimer = setInterval(() => {
+          if (liveIndex >= currentFiltered.length) liveIndex = 0;
+          const p = currentFiltered[liveIndex];
+          updateKPIs(p);
+          liveIndex++;
+        }, 1000);
+      }
+    }
+
+    function renderAllCharts() {
+      if (!currentFiltered.length) return;
+      const isDark = !document.body.classList.contains('light-theme');
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      const times = currentFiltered.map(d => d.Data_Hora);
+      const umids = currentFiltered.map(d => d.Umidade_Pct);
+      const temps = currentFiltered.map(d => d.Temperatura_C);
+      const dews = currentFiltered.map(d => d.Orvalho_C);
+      const rainAdcs = currentFiltered.map(d => d.Chuva_ADC);
+
+      // 1. Umidade com Gradiente Fluido
+      const domHumid = document.getElementById('chart-humid-timeline');
+      if (domHumid) {
+        if (chartHumid) chartHumid.dispose();
+        chartHumid = echarts.init(domHumid);
+        chartHumid.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: '%', min: 40, max: 100, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            name: 'Umidade Relativa', type: 'line', smooth: true, data: umids,
+            itemStyle: { color: '#06b6d4' },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(6, 182, 212, 0.65)' },
+                { offset: 1, color: 'rgba(6, 182, 212, 0.05)' }
+              ])
+            }
+          }]
+        });
+      }
+
+      // 2. Curva de Condensação (Bulbo vs Dew)
+      const domDew = document.getElementById('chart-dew-curve');
+      if (domDew) {
+        if (chartDew) chartDew.dispose();
+        chartDew = echarts.init(domDew);
+        chartDew.setOption({
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['Temperatura Bulbo', 'Ponto de Orvalho'], textStyle: { color: textColor } },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: '°C', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [
+            { name: 'Temperatura Bulbo', type: 'line', smooth: true, data: temps, itemStyle: { color: '#f59e0b' } },
+            { name: 'Ponto de Orvalho', type: 'line', smooth: true, data: dews, itemStyle: { color: '#3b82f6' } }
+          ]
+        });
+      }
+
+      // 3. Chuva ADC
+      const domRain = document.getElementById('chart-rain-adc');
+      if (domRain) {
+        if (chartRain) chartRain.dispose();
+        chartRain = echarts.init(domRain);
+        chartRain.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: '3%', right: '3%', bottom: '15%', containLabel: true },
+          dataZoom: [{ type: 'slider', bottom: 8 }, { type: 'inside' }],
+          xAxis: { type: 'category', data: times, axisLabel: { color: textColor } },
+          yAxis: { type: 'value', name: 'ADC (12-bit)', min: 0, max: 4095, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            name: 'Chuva ADC', type: 'line', step: 'middle', data: rainAdcs, itemStyle: { color: '#10b981' }
+          }]
+        });
+      }
+
+      // 4. Scatter Umidade vs Margem de Orvalho
+      const domMargin = document.getElementById('chart-scatter-margin');
+      if (domMargin) {
+        if (chartMargin) chartMargin.dispose();
+        chartMargin = echarts.init(domMargin);
+        const pairs = currentFiltered.map(d => [d.Umidade_Pct, parseFloat((d.Temperatura_C - d.Orvalho_C).toFixed(2))]);
+        chartMargin.setOption({
+          tooltip: { formatter: p => `Umidade: ${p.value[0]}%<br>Margem (T - Dew): ${p.value[1]} °C` },
+          grid: { left: '3%', right: '3%', bottom: '10%', containLabel: true },
+          xAxis: { type: 'value', name: 'Umidade (%)', scale: true, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          yAxis: { type: 'value', name: 'Margem (°C)', scale: true, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+          series: [{
+            type: 'scatter', symbolSize: 5, data: pairs, itemStyle: { color: '#06b6d4' }
+          }]
+        });
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      chartHumid && chartHumid.resize();
+      chartDew && chartDew.resize();
+      chartRain && chartRain.resize();
+      chartMargin && chartMargin.resize();
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>
